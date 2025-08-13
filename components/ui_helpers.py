@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import base64
+import matplotlib.colors as mcolors
 
 
 def success_box(message):
@@ -13,6 +14,19 @@ def error_box(message):
 
 def warning_box(message):
     st.warning(f"⚠️ {message}")
+
+
+def lighten_color(color, amount=0.3):
+    """
+    Lightens the given color by mixing it with white.
+    amount=0 → no change, amount=1 → white
+    """
+    try:
+        c = mcolors.cnames[color]  # Convert color name to hex
+    except:
+        c = color
+    c = mcolors.to_rgb(c)
+    return mcolors.to_hex([1 - (1 - x) * (1 - amount) for x in c])
 
 
 # Container css styles
@@ -28,7 +42,24 @@ container_css_styles = """
     }
 """
 
+lighten_amount = 0.92
+chat_avatars_color_bg = {
+    "Assistant": lighten_color("#049BE5", lighten_amount),
+    "Error": lighten_color("#E53835", lighten_amount),
+    "supervisor": lighten_color("#3366CC", lighten_amount),
+    "Budget_Agent": lighten_color("#DC3912", lighten_amount),
+    "Historical_Expense_Agent": lighten_color("#FF9900", lighten_amount),
+    "CY_Expense_Agent": lighten_color("#109618", lighten_amount),
+    "SELF_RESPONSE": lighten_color("#990099", lighten_amount),
+    "User": lighten_color("#0099C6", lighten_amount),
+    "Budget Agent": lighten_color("#DC3912", lighten_amount),
+    "Historical Expense Agent": lighten_color("#FF9900", lighten_amount),
+    "CY Expense Agent": lighten_color("#109618", lighten_amount),
+}
+
 chat_avatars = {
+    "Assistant": "https://api.dicebear.com/9.x/bottts/svg?seed=Ryker",
+    "Error": "https://api.dicebear.com/9.x/bottts/svg?seed=Eliza",
     "supervisor": "https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=3366CC&fontSize=40",
     "Budget_Agent": "https://api.dicebear.com/7.x/initials/svg?seed=BA&backgroundColor=DC3912&fontSize=40",
     "Historical_Expense_Agent": "https://api.dicebear.com/7.x/initials/svg?seed=HE&backgroundColor=FF9900&fontSize=40",
@@ -60,10 +91,7 @@ def get_base64_image(image_path: str) -> str:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-def display_saved_plot(plot_path: str):
-    bg_color: str = "#f0f2f6"
-    padding: str = "0.75em"
-    border_radius: str = "0.75em"
+def display_saved_plot(plot_path: str, bg_color="#f0f2f6"):
     if os.path.exists(plot_path):
         st.markdown(
             f"""
@@ -71,6 +99,9 @@ def display_saved_plot(plot_path: str):
                 .image-container {{
                     display: flex;
                     justify-content: center;
+                    padding-bottom: 0.75em;
+                    border-radius: 0em 0em 0.5em 0.5em;
+                    background-color: {bg_color}
                 }}
             </style>
             <div class="image-container">

@@ -14,9 +14,16 @@ def render_settings_tab():
         st.markdown("")
         st.text_input("OpenAI API Key", type="password")
         st.write("")
-        st.selectbox(
+        model_name = st.selectbox(
             "LLM Model",
             ["gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-3.5"],
-            index=2,
+            index=["gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-3.5"].index(
+                st.session_state["model_name"]
+            ),
         )
+        st.markdown("")
+        _, c1 = st.columns([0.92, 0.08])
+        with c1:
+            if st.button("Submit"):
+                st.session_state["model_name"] = model_name
         st.write("")

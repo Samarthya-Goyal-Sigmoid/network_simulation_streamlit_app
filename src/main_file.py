@@ -82,7 +82,7 @@ class AgentLift:
             self.HYExpenseAgent, self.CYExpenseAgent, self.BudgetAgent
         )
 
-        print("🚀 Agent-Lift System initialized!")
+        # print("🚀 Agent-Lift System initialized!")
 
     def run_question(self, question):
         """Run a single question through the workflow."""

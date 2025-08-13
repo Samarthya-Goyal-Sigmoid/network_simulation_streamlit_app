@@ -2,9 +2,46 @@
 from streamlit_option_menu import option_menu
 import streamlit as st
 from PIL import Image
+import pandas as pd
 
 # Import files
+from .session_state_manager import init_session_state
+
+init_session_state()
 from .ui_helpers import get_horizontal_line
+from src.main_file import AgentLift
+
+
+def backend_toggle(previous_state):
+    # Previous state
+    if st.session_state[previous_state] == False:
+        # Do not use backend data
+        st.session_state["messages"] = []
+        st.session_state["show_chat_session"] = True
+        st.session_state["agent_obj"] = None
+        if (
+            st.session_state["historical_expenses_data_file_name"]
+            and st.session_state["current_year_expenses_data_file_name"]
+            and st.session_state["budget_data_file_name"]
+        ):
+            st.session_state["agent_obj"] = AgentLift(
+                df_HY=pd.DataFrame(st.session_state["historical_expenses_data"]),
+                df_CY=pd.DataFrame(st.session_state["current_year_expenses_data"]),
+                df_Budget=pd.DataFrame(st.session_state["budget_data"]),
+                file_path=f"src",
+                model_name=st.session_state["model_name"],
+            )
+    else:
+        # Use backend data
+        st.session_state["messages"] = []
+        st.session_state["show_chat_session"] = True
+        st.session_state["agent_obj"] = AgentLift(
+            df_HY=pd.DataFrame(st.session_state["backend_historical_expenses_data"]),
+            df_CY=pd.DataFrame(st.session_state["backend_current_year_expenses_data"]),
+            df_Budget=pd.DataFrame(st.session_state["backend_budget_data"]),
+            file_path=f"src",
+            model_name=st.session_state["model_name"],
+        )
 
 
 def render_sidebar():
@@ -43,4 +80,13 @@ def render_sidebar():
                 },
             },
         )
+        get_horizontal_line(color="#E30A13")
+        _, c1 = st.columns([0.05, 0.95])
+        with c1:
+            st.toggle(
+                "Use backend data",
+                key="use_backend_data",
+                on_change=backend_toggle,
+                args=("use_backend_data",),
+            )
         return selected
