@@ -31,22 +31,20 @@ class AgentLift:
             return
 
         # Load prompts for each dataset
-        prompt_file_path_hy = os.path.join(
-            file_path, get_prompt_file("Historical_Expenses.csv")
-        )
+        prompt_file_path_hy = f"{file_path}/prompts/prompt_HY.txt"
         with open(prompt_file_path_hy, "r") as file:
             self.data_description_HY = file.read().strip()
 
-        prompt_file_path_cy = os.path.join(file_path, get_prompt_file("CY_Expense.csv"))
+        prompt_file_path_cy = f"{file_path}/prompts/Prompt_CY.txt"
         with open(prompt_file_path_cy, "r") as file:
             self.data_description_CY = file.read().strip()
 
-        prompt_file_path_budget = os.path.join(file_path, get_prompt_file("Budget.csv"))
+        prompt_file_path_budget = f"{file_path}/prompts/prompt_Budget.txt"
         with open(prompt_file_path_budget, "r") as file:
             self.data_description_Budget = file.read().strip()
 
         # Common agent prompt
-        prompt_file_path_agent = os.path.join(file_path, "prompts/Agent_Prompt.txt")
+        prompt_file_path_agent = f"{file_path}/prompts/Agent_Prompt.txt"
         with open(prompt_file_path_agent, "r") as file:
             prompt = file.read().strip()
 
