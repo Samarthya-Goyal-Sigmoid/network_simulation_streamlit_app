@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 import random
+import os
 import pandas as pd
 from langchain.schema import HumanMessage
 from langgraph.graph.message import add_messages
@@ -103,7 +104,7 @@ def render_chat_tab():
                             st.session_state["current_year_expenses_data"]
                         ),
                         df_Budget=pd.DataFrame(st.session_state["budget_data"]),
-                        file_path="src",
+                        file_path=f"{os.getcwd()}/src",
                         model_name="gpt-4o",
                     )
 
