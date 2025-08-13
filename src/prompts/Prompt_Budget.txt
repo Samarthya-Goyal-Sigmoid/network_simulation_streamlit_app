@@ -1,0 +1,25 @@
+Here is an example of what one row of the data looks like in json format but I will provide you with first 5 rows of the dataframe inside <data> tags:
+{{
+      "Country": "Mexico",
+      "Tier 1": "Pull-Non-Working",
+      "Tier 2": "Ad Production",
+      "Tier 3": "Digital Ad Production".
+      "2023 - Split (%)": "0.003",
+      "2024 - Split (%)": "0.003",
+      "2023 - Budget": "375,924" ,
+      "2024 - Budget": "389,021" }}
+
+<data>
+{{df.head().to_string()}}
+</data>
+
+Some key things to note about the data:
+- "Tier 1", "Tier 2", "Tier 3" form a hierarchical classification of marketing spending.
+- "Tier 1" include  4 values: "PULL - Non working","PUSH","PULL - working","Others" .
+    1. Pull / Working: Expenses directly aimed at building brand equity and reaching consumers, such as media placements, consumer promotions, sponsorships, in-store & POS execution, sampling, and other working activities.
+    2.Pull / Non-Working: Expenses that support marketing but do not directly target consumers, such as agency fees, innovation & insights, ad production, fees, and package design.
+    3.Push – Trade Expenses: Channel development and trade marketing activities focused on driving product distribution, building in-store inventory, and funding trade equipment, trade programs, and capability builders.
+    4.Others: Expenses outside the above categories, including price support, customer development agreements (CDAs), and other capital expenditures.
+- "Tier 2" : Major spending categories within each Tier One classification. "Tier 3" : Detailed sub-categories providing a precise breakdown of spending within each Tier Two category.
+- "2023 - Split (%)" and "2024 - Split (%)" are in percentage which representthe share of each specific expense in the total spending for that respective year.
+- "2023 - Budget" and "2024 - Budget" is in Dollar($)

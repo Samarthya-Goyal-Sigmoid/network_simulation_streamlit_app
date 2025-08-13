@@ -13,6 +13,8 @@ import warnings
 warnings.filterwarnings("ignore")
 import streamlit as st
 import pandas as pd
+import os
+import yaml
 
 # Page config
 st.set_page_config(
@@ -21,7 +23,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+with open("config.yaml", "r") as f:
+    llm_keys = yaml.safe_load(f)
+
+os.environ["OPENAI_API_KEY"] = llm_keys["open_ai"]
+
 # Import files
+from components.session_state_manager import init_session_state
+
+init_session_state()
 from components.sidebar import render_sidebar
 from components.home_tab import render_home
 from components.chat_tab import render_chat_tab
