@@ -31,7 +31,7 @@ class AgentLift:
             return
 
         # Load prompts for each dataset
-        prompt_file_path_hy = f"{file_path}/prompts/prompt_HY.txt"
+        prompt_file_path_hy = f"{file_path}/prompts/Prompt_HY.txt"
         with open(prompt_file_path_hy, "r") as file:
             self.data_description_HY = file.read().strip()
 
@@ -39,7 +39,7 @@ class AgentLift:
         with open(prompt_file_path_cy, "r") as file:
             self.data_description_CY = file.read().strip()
 
-        prompt_file_path_budget = f"{file_path}/prompts/prompt_Budget.txt"
+        prompt_file_path_budget = f"{file_path}/prompts/Prompt_Budget.txt"
         with open(prompt_file_path_budget, "r") as file:
             self.data_description_Budget = file.read().strip()
 
