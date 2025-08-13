@@ -1,6 +1,5 @@
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
-from .ui_helpers import container_css_styles, get_horizontal_line, add_text
 import random
 import pandas as pd
 from langchain.schema import HumanMessage
@@ -8,7 +7,13 @@ from langgraph.graph.message import add_messages
 
 # Import files
 from .session_state_manager import init_session_state
-from .ui_helpers import warning_box, chat_avatars
+from .ui_helpers import (
+    warning_box,
+    chat_avatars,
+    display_saved_plot,
+    add_text,
+    container_css_styles,
+)
 
 init_session_state()
 import sys
@@ -121,6 +126,9 @@ def render_chat_tab():
                                 "assistant", avatar=chat_avatars[message["agent"]]
                             ):
                                 st.write(message["content"])
+                                # Show the figure
+                                if message["figure_path"]:
+                                    display_saved_plot(message["figure_path"])
 
             chat_query_container_css_styles = """
                 {
@@ -149,6 +157,7 @@ def render_chat_tab():
                             "agent": "User",
                             "content": prompt,
                             "messages": [HumanMessage(content=prompt)],
+                            "figure_path": None,
                             "next": "supervisor",
                             "call_bot": True,
                         }
@@ -203,6 +212,9 @@ def render_chat_tab():
                         "messages": add_messages(
                             previous_message_dict["messages"], current_state["messages"]
                         ),
+                        "figure_path": current_state["messages"][
+                            0
+                        ].additional_kwargs.get("figure_path", None),
                         "next": current_state["next"],
                         "call_bot": (
                             True

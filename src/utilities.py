@@ -417,8 +417,10 @@ def HYExpense_agent(state: AgentState, hy_agent):
     question = state["messages"][len(state["messages"]) - 2].content
     response = hy_agent.generate_response(question)
 
+    additional_kwargs = {}
     if response["figure"]:
         display_saved_plot(response["figure"])
+        additional_kwargs["figure_path"] = response["figure"]
 
     print("Response is:", response)
 
@@ -428,7 +430,13 @@ def HYExpense_agent(state: AgentState, hy_agent):
         + (response.get("answer") or "")
     )
 
-    return [HumanMessage(content=message, name="HY_Expense_Agent")]
+    return [
+        HumanMessage(
+            content=message,
+            name="HY_Expense_Agent",
+            additional_kwargs=additional_kwargs,
+        )
+    ]
 
 
 def CYExpense_agent(state: AgentState, cy_agent):
@@ -436,8 +444,12 @@ def CYExpense_agent(state: AgentState, cy_agent):
     question = state["messages"][len(state["messages"]) - 2].content
     response = cy_agent.generate_response(question)
 
+    additional_kwargs = {}
     if response["figure"]:
         display_saved_plot(response["figure"])
+        additional_kwargs["figure_path"] = response["figure"]
+
+    print("internal", response)
 
     message = (
         response["approach"]
@@ -445,7 +457,13 @@ def CYExpense_agent(state: AgentState, cy_agent):
         + response["answer"]
     )
 
-    return [HumanMessage(content=message, name="CY_Expense_Agent")]
+    return [
+        HumanMessage(
+            content=message,
+            name="CY_Expense_Agent",
+            additional_kwargs=additional_kwargs,
+        )
+    ]
 
 
 def Budget_agent(state: AgentState, budget_agent):
@@ -453,8 +471,10 @@ def Budget_agent(state: AgentState, budget_agent):
     question = state["messages"][len(state["messages"]) - 2].content
     response = budget_agent.generate_response(question)
 
+    additional_kwargs = {}
     if response["figure"]:
         display_saved_plot(response["figure"])
+        additional_kwargs["figure_path"] = response["figure"]
 
     message = (
         response["approach"]
@@ -462,7 +482,13 @@ def Budget_agent(state: AgentState, budget_agent):
         + response["answer"]
     )
 
-    return [HumanMessage(content=message, name="Budget_Agent")]
+    return [
+        HumanMessage(
+            content=message,
+            name="Budget_Agent",
+            additional_kwargs=additional_kwargs,
+        )
+    ]
 
 
 # Function to create the workflow graph with agents as parameters

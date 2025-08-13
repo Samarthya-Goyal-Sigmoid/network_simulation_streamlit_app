@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+import base64
 
 
 def success_box(message):
@@ -51,3 +53,29 @@ def add_text(text, text_color, size):
         f"<h{size} style='color:{text_color};'>{text}</h{size}>",
         unsafe_allow_html=True,
     )
+
+
+def get_base64_image(image_path: str) -> str:
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def display_saved_plot(plot_path: str):
+    bg_color: str = "#f0f2f6"
+    padding: str = "0.75em"
+    border_radius: str = "0.75em"
+    if os.path.exists(plot_path):
+        st.markdown(
+            f"""
+            <style>
+                .image-container {{
+                    display: flex;
+                    justify-content: center;
+                }}
+            </style>
+            <div class="image-container">
+                <img src="data:image/png;base64,{get_base64_image(plot_path)}" style="width:650px; height:auto;">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
