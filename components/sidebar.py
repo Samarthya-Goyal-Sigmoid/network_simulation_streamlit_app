@@ -3,13 +3,21 @@ from streamlit_option_menu import option_menu
 import streamlit as st
 from PIL import Image
 
+# Import files
+from .ui_helpers import get_horizontal_line
+
 
 def render_sidebar():
     with st.sidebar:
-        logo = Image.open("logo/lift_logo.png")
-        _, c1, _ = st.columns([0.2, 0.8, 0.2])
+        logo = Image.open("logo/sigmoid_logo.png")
+        c1, c2 = st.columns([0.5, 0.5])
         with c1:
             st.image(logo, width=200)
+        logo = Image.open("logo/lift_logo.png")
+        with c2:
+            st.image(logo, width=200)
+        get_horizontal_line(color="#E30A13")
+        st.markdown("")
         selected = option_menu(
             menu_title=None,
             options=["Home", "Chat Sessions", "Settings"],
