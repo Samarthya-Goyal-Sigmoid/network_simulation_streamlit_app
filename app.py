@@ -26,7 +26,8 @@ st.set_page_config(
 with open("config.yaml", "r") as f:
     llm_keys = yaml.safe_load(f)
 
-os.environ["OPENAI_API_KEY"] = llm_keys["open_ai"]
+if llm_keys["open_ai"].strip() != "":
+    os.environ["OPENAI_API_KEY"] = llm_keys["open_ai"]
 
 # Import files
 from components.session_state_manager import init_session_state
