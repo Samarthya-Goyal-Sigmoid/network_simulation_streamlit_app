@@ -17,6 +17,7 @@ from .ui_helpers import (
     add_text,
     container_css_styles,
     chat_avatars_color_bg,
+    messages_to_text,
 )
 from src.main_file import AgentLift
 
@@ -42,7 +43,9 @@ def render_chat_tab():
         key="chat_title",
         css_styles=container_css_styles,
     ):
-        c1, c2, _, c3 = st.columns([0.2, 0.45, 0.1, 0.2], vertical_alignment="top")
+        c1, c2, _, c3, c4 = st.columns(
+            [0.2, 0.45, 0.07, 0.18, 0.05], vertical_alignment="top"
+        )
         with c1:
             add_text(text="Start Chat Session:", text_color=text_color, size=5)
         with c2:
@@ -108,7 +111,14 @@ def render_chat_tab():
                             file_path=f"src",
                             model_name=st.session_state["model_name"],
                         )
-
+        with c4:
+            chat_text = messages_to_text(st.session_state["messages"])
+            st.download_button(
+                label="📥",
+                data=chat_text,
+                file_name="chat_session.txt",
+                mime="text/plain",
+            )
     if st.session_state["agent_obj"]:
         # Chat session container
         if st.session_state["show_chat_session"]:

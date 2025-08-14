@@ -4,6 +4,21 @@ import base64
 import matplotlib.colors as mcolors
 
 
+# Convert messages to plain text
+def messages_to_text(messages):
+    lines = []
+    for msg in messages:
+        if msg["figure_path"]:
+            lines.append(
+                f"{msg['role'].capitalize()} ({msg['agent'].capitalize()}): {msg['content']} \nFigure path: {msg['figure_path']}"
+            )
+        else:
+            lines.append(
+                f"{msg['role'].capitalize()} ({msg['agent'].capitalize()}): {msg['content']}"
+            )
+    return "\n\n".join(lines)
+
+
 def success_box(message):
     st.success(f"✅ {message}")
 
