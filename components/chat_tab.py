@@ -114,7 +114,7 @@ def render_chat_tab():
         with c4:
             chat_text = messages_to_text(st.session_state["messages"])
             st.download_button(
-                label="📥",
+                label="⬇️",
                 data=chat_text,
                 file_name="chat_session.txt",
                 mime="text/plain",
