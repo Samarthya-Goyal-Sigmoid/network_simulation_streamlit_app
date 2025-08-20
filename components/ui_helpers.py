@@ -71,20 +71,21 @@ chat_avatars_color_bg = {
     "Historical Expense Agent": lighten_color("#FF9900", lighten_amount),
     "CY Expense Agent": lighten_color("#109618", lighten_amount),
 }
-
-chat_avatars = {
-    "Assistant": "https://api.dicebear.com/9.x/bottts/svg?seed=Ryker",
-    "Error": "https://api.dicebear.com/9.x/bottts/svg?seed=Eliza",
-    "supervisor": "https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=3366CC&fontSize=40",
-    "Budget_Agent": "https://api.dicebear.com/7.x/initials/svg?seed=BA&backgroundColor=DC3912&fontSize=40",
-    "Historical_Expense_Agent": "https://api.dicebear.com/7.x/initials/svg?seed=HE&backgroundColor=FF9900&fontSize=40",
-    "CY_Expense_Agent": "https://api.dicebear.com/7.x/initials/svg?seed=CE&backgroundColor=109618&fontSize=40&color=ffffff",
-    "SELF_RESPONSE": "https://api.dicebear.com/7.x/initials/svg?seed=SR&backgroundColor=990099&fontSize=40&color=ffffff",
-    "User": "https://api.dicebear.com/7.x/initials/svg?seed=U&backgroundColor=0099C6&fontSize=40&color=ffffff",
-    "Budget Agent": "https://api.dicebear.com/7.x/initials/svg?seed=BA&backgroundColor=DC3912&fontSize=40",
-    "Historical Expense Agent": "https://api.dicebear.com/7.x/initials/svg?seed=HE&backgroundColor=FF9900&fontSize=40",
-    "CY Expense Agent": "https://api.dicebear.com/7.x/initials/svg?seed=CE&backgroundColor=109618&fontSize=40&color=ffffff",
-}
+chat_avatars = {}
+for chat in [
+    "Assistant",
+    "Error",
+    "supervisor",
+    "Budget_Agent",
+    "Historical_Expense_Agent",
+    "CY_Expense_Agent",
+    "SELF_RESPONSE",
+    "User",
+    "Budget Agent",
+    "Historical Expense Agent",
+    "CY Expense Agent",
+]:
+    chat_avatars[chat] = f"logo/avatars/{chat}.svg"
 
 
 def get_horizontal_line(color):

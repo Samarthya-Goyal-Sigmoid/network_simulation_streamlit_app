@@ -34,6 +34,7 @@ from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -47,13 +48,17 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 
 
 llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"), temperature=0)
-# Initialize memory
-memory = MemorySaver()
+
+# Initialize memory (outside of functions)
+supervisor_memory = ConversationBufferMemory(
+    memory_key="chat_history", return_messages=True
+)
 
 
 def get_prompt_file(data_source):
     """Return the appropriate prompt file based on the data source."""
     prompt_mapping = {
+        "Expenses.csv": "prompts/Expense.txt",
         "Historical_Expenses.csv": "prompts/prompt_HY.txt",
         "CY_Expense.csv": "prompts/prompt_CY.txt",
         "Budget.csv": "prompts/prompt_Budget.txt",
@@ -142,11 +147,11 @@ def execute_analysis(df, response_text):
 
             # Combine code with answer template
             combined_code = f"""
-{dedented_code}
+            {dedented_code}
 
-# Format the answer template
-answer_text = f'''{segments['answer']}'''
-"""
+            # Format the answer template
+            answer_text = f'''{segments['answer']}'''
+            """
             print("Combined Code:\n", combined_code)
             exec(combined_code, namespace)
             results["answer"] = namespace.get("answer_text")
@@ -197,6 +202,7 @@ class Agent:
         prompt_temp = ChatPromptTemplate.from_messages(
             [
                 ("system", self.prompt.strip()),
+                MessagesPlaceholder(variable_name="chat_history"),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
@@ -207,6 +213,7 @@ class Agent:
                     "data_description": self.data_description,
                     "question": question,
                     "messages": [HumanMessage(content=question)],
+                    "chat_history": supervisor_memory.chat_memory.messages,
                 }
             )
         )
@@ -224,13 +231,54 @@ class Agent:
         return f"Agent(prompt={self.prompt}, data_description={self.data_description}, dataset={self.dataset.head()})"
 
 
-# Define the supervisor role and members
+# NEW: Tool-based functions for the insight agent
+# FIXED: Tool-based functions for the insight agent - Remove @tool decorator
+@tool
+def analyze_expense_data(
+    question: str, dataset: pd.DataFrame, data_description: str, prompt: str
+) -> dict:
+    """Analyze expense data (both historical and current year) based on the question."""
+    # Create temporary agent for expense analysis
+    temp_agent = Agent(
+        llm=llm,
+        prompt=prompt,  # Will be replaced with actual prompt
+        tools=[],
+        data_description=data_description,
+        dataset=dataset,
+        helper_functions={"execute_analysis": execute_analysis},
+    )
+
+    response = temp_agent.generate_response(question)
+    return response
+
+
+@tool
+def analyze_budget_data(
+    question: str, dataset: pd.DataFrame, data_description: str, prompt: str
+) -> dict:
+    """Analyze budget data based on the question."""
+
+    # Create temporary agent for budget analysis
+    temp_agent = Agent(
+        llm=llm,
+        prompt=prompt,  # Will be replaced with actual prompt
+        tools=[],
+        data_description=data_description,
+        dataset=dataset,
+        helper_functions={"execute_analysis": execute_analysis},
+    )
+
+    response = temp_agent.generate_response(question)
+    return response
+
+
+# Define the supervisor role and members (MODIFIED for single insight agent)
 role = """
-You are a Multi-Agent Supervisor responsible for managing the conversation flow between multiple agents.
-Your role is to analyze user queries and orchestrate responses efficiently by assigning tasks to the appropriate agents.
+You are a Multi-Agent Supervisor responsible for managing the conversation flow.
+Your role is to analyze user queries and orchestrate responses efficiently.
 
 The Supervisor analyzes the conversation history, decides which agent should act next, and routes the conversation accordingly.
-The Supervisor ensures smooth coordination and task completion by assigning specific roles to agents.
+The Supervisor ensures smooth coordination and task completion.
 
 You also have the capability to answer simple questions directly without routing to specialized agents.
 This improves efficiency and user experience for straightforward queries.
@@ -241,30 +289,23 @@ Upon receiving responses, reflect and dynamically adjust the approach using ReAc
 Please try to follow the below mentioned instructions:
 1. Analyze the user's query and determine the best course of action.
 2. For simple questions about the system, general information, or clarifications that don't require specialized data analysis, ANSWER DIRECTLY using the "SELF_RESPONSE" option.
-3. For questions requiring data analysis, visualization, or specialized domain knowledge, select an appropriate agent from "Historical Expense Agent", "CY Expense Agent", or "Budget Agent".
+3. For questions requiring data analysis, visualization, or specialized domain knowledge, route to "Insight Agent".
 4. If no further action is required, route the process to "FINISH".
-5. Ensure smooth coordination between agents and track conversation progress.
+5. Ensure smooth coordination and track conversation progress.
+6. If you are not sure about the question or next step, you can ask the user for clarification.
+7. Based on conversation history, you can answer directly or rephrase recent user questions and pass to the agent.
 """
 
-# Define the members
+# Define the members (MODIFIED for single insight agent)
 members = [
     {
-        "agent_name": "Historical Expense Agent",
-        "description": """Historical Expense Agent is responsible for analyzing past year's expense data to generate insights. 
+        "agent_name": "Insight Agent",
+        "description": """Insight Agent is responsible for analyzing expense and budget data to generate insights. 
          It handles tasks such as performing exploratory data analysis (EDA), calculating summary statistics, 
-         identifying trends, comparing metrics across different dimensions (e.g., year, regions,Brand,Tier), and generating 
-         visualizations for historic period.Suitable when user queries involve multi-year or pre-current-year expense patterns, comparisons, or trends.""",
-    },
-    {
-        "agent_name": "CY Expense Agent",
-        "description": """CY(Current Year) Expense Agent is responsible for analyzing current year expense data to generate insights. It handles tasks such as performing exploratory data analysis (EDA), calculating summary statistics, 
-         identifying trends, comparing metrics across different dimensions (e.g., year, regions,Brand,Tier), and generating 
-         visualizations specific to current year expense data. Suitable for queries focusing on in-year performance, approval statuses, or category/tier breakdowns for the current year.""",
-    },
-    {
-        "agent_name": "Budget Agent",
-        "description": """Budget Agent is responsible for analyzing budget-related data to generate insights. It Handles EDA, summary statistics, comparisons across tiers, and visualizations for allocated budgets.
-        Suitable for queries about budget allocations, year-on-year budget comparisons, or proportional spending splits.""",
+         identifying trends, comparing metrics across different dimensions (e.g., year, regions, Brand, Tier), 
+         generating visualizations, and providing comprehensive analysis using multiple tools at its disposal.
+         The agent can analyze expense data (both historical and current year) and budget data, combining insights
+         from multiple sources when needed for comprehensive analysis.""",
     },
     {
         "agent_name": "SELF_RESPONSE",
@@ -275,10 +316,11 @@ members = [
         3. Simple information requests that don't require data analysis
         4. Explanations of concepts or terms
         5. Help with formulating questions for specialized agents
+        6. Questions you can answer based on conversation history
+        7. Rephrasing or clarifying recent user questions
         When selecting this option, you should provide a complete, helpful response to the user's query.""",
     },
 ]
-
 # Define the options for workers
 options = ["FINISH"] + [mem["agent_name"] for mem in members]
 
@@ -299,16 +341,20 @@ final_prompt += """
 Think step-by-step before choosing the next agent or deciding to answer directly. 
 
 Examples of when to use SELF_RESPONSE:
-- "Can you explain what the Budget Agent does?"
+- "Can you explain what the Insight Agent does?"
 - "What kind of data does this system analyze?"
-- "I'm not sure how to phrase my question about current year expense"
-- "What's the difference between Current and Historic Expences ?"
+- "I'm not sure how to phrase my question about expenses"
+- "What's the difference between expenses and budget?"
+- "Can you rephrase my last question?"
+- "Based on our conversation, what should I ask next?"
 
-Examples of when to route to specialized agents:
-- "Give me summary view of the Tier 1 expenses for Brazil for the past 2 years" (Historical Expense Agent)
-- "What is the pull to push ratio for Current Year given the expense logged until now for brand Pepsi?" (CY Expense Agent)
-- "What is the pull to push ratio for 2024 budget?" (Budget Agent)
-- "For the current year, which expenses split are higher than the budget planned for Brand X?" (Both Budget and CY Expense Agent)
+Examples of when to route to Insight Agent:
+- "Give me summary view of the Tier 1 expenses for Brazil for the past 2 years"
+- "What is the pull to push ratio for current year expenses for brand Pepsi?"
+- "What is the pull to push ratio for 2024 budget?"
+- "Compare current year expenses vs budget for Brand X"
+- "Show me year-over-year expense trends"
+- "Analyze budget allocation across different tiers"
 
 If needed, reflect on responses and adjust your approach and finally provide response.
 """
@@ -317,6 +363,7 @@ If needed, reflect on responses and adjust your approach and finally provide res
 Supervisor_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", final_prompt.strip()),
+        MessagesPlaceholder(variable_name="chat_history"),
         MessagesPlaceholder(variable_name="messages"),
     ]
 )
@@ -361,11 +408,18 @@ supervisor_chain = (
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
     next: str
+    chat_history: list  # Add memory field
 
 
 # Define the supervisor node function
 def supervisor_node(state: AgentState, chain=supervisor_chain):
-    result = chain.invoke(state["messages"])
+
+    # Get conversation history from memory
+    chat_history = supervisor_memory.chat_memory.messages
+
+    # Invoke chain with enhanced context
+    result = chain.invoke({"messages": state["messages"], "chat_history": chat_history})
+
     if result["next"] == "SELF_RESPONSE":
         if "direct_response" in result:
             return_response = result.get("direct_response", "thought_process")
@@ -374,6 +428,10 @@ def supervisor_node(state: AgentState, chain=supervisor_chain):
                 if return_response != ""
                 else result.get("thought_process", "")
             )
+
+            # Add response to memory
+            supervisor_memory.chat_memory.add_ai_message(return_response)
+
             return {
                 "messages": [AIMessage(content=return_response, name="supervisor")],
                 "next": "FINISH",
@@ -390,150 +448,220 @@ def supervisor_node(state: AgentState, chain=supervisor_chain):
             ],
             "next": "FINISH",
         }
-    final_msg = f"Calling {result['next']}."
+
+    # Check if this is a response from the insight agent
+    if any(msg.name == "Insight Agent" for msg in state["messages"]):
+        # Insight agent has completed its work, end the workflow
+        completion_message = "Analysis completed successfully."
+
+        # Add completion to memory
+        supervisor_memory.chat_memory.add_ai_message(completion_message)
+
+        return {
+            "messages": [AIMessage(content=completion_message, name="supervisor")],
+            "next": "FINISH",
+        }
+
+    # Route to insight agent for the first time
+    routing_message = f"Routing to Insight Agent for data analysis."
+
+    # Add routing decision to memory
+    supervisor_memory.chat_memory.add_ai_message(routing_message)
 
     return {
-        "messages": [
-            AIMessage(
-                content=result.get(
-                    "direct_response", result.get("thought_process", final_msg)
-                ),
-                name="supervisor",
-            )
-        ],
-        "next": result["next"],
+        "messages": [AIMessage(content=routing_message, name="supervisor")],
+        "next": "Insight Agent",
     }
 
 
-# Define agent node functions
-def agent_node(state, agent, name):
-    result = agent(state)  # This result will be the list of messages
-    return {"messages": result, "next": "supervisor"}
-
-
-# Define specific agent functions - NOW THEY TAKE AGENTS AS PARAMETERS
-def HYExpense_agent(state: AgentState, hy_agent):
-    """Historical Expense Agent is responsible for analyzing past year's expense data to generate insights."""
+# MODIFIED: Single insight agent with two-task LLM approach
+def insight_agent_workflow(
+    state: AgentState,
+    expense_dataset,
+    budget_dataset,
+    expense_description,
+    budget_description,
+    agent_prompt,
+):
+    """Single insight agent that uses one LLM for two tasks: tool selection and final response generation."""
     question = state["messages"][len(state["messages"]) - 2].content
-    response = hy_agent.generate_response(question)
 
-    additional_kwargs = {}
-    if response["figure"]:
-        display_saved_plot(response["figure"])
-        additional_kwargs["figure_path"] = response["figure"]
+    print(f"🔍 Insight Agent analyzing: {question}")
 
-    print("Response is:", response)
+    # Add question to memory
+    supervisor_memory.chat_memory.add_user_message(question)
 
-    message = (
-        (response.get("approach") or "")
-        + "\nSolution we got from this approach is:\n"
-        + (response.get("answer") or "")
+    # TASK 1: LLM decides which tools to call based on user query
+    tool_selection_prompt = f"""
+    You are an intelligent tool selector. Analyze the user question and determine which tools are needed.
+    
+    User Question: {question}
+    
+    Available Tools:
+    1. analyze_expense_data - For expense analysis, analyzing both historical and current year expense data. 
+         Handles EDA, summary statistics, identifying trends, comparing metrics across different dimensions 
+         (e.g., year, regions, Brand, Tier), and generating visualizations for expense patterns.
+    2. analyze_budget_data - For budget data analysis, allocation, planning, budget vs actual comparisons. 
+       Suitable for queries about budget allocations, year-on-year budget comparisons, or proportional spending splits.
+    
+    Return a JSON response with:
+    {{
+        "tools_needed": ["expense", "budget", "both"],
+        "reasoning": "Explain why these specific tools are needed for this question",
+        "execution_order": ["tool1", "tool2"] // The order in which tools should be executed
+    }}
+    
+    Consider the full context and intent of the question. Be specific about which tools are needed.
+    """
+
+    print("🤖 LLM Task 1: Selecting tools...")
+    tool_selection_response = llm.invoke(tool_selection_prompt)
+
+    # Parse tool selection (simple parsing for demonstration)
+    try:
+        import json
+
+        content = tool_selection_response.content
+        json_start = content.find("{")
+        json_end = content.rfind("}") + 1
+        if json_start != -1 and json_end != 0:
+            json_str = content[json_start:json_end]
+            tool_decision = json.loads(json_str)
+        else:
+            # Fallback parsing
+            tool_decision = {
+                "tools_needed": ["expense"],
+                "reasoning": "Default fallback",
+                "execution_order": ["expense"],
+            }
+    except:
+        # Fallback if JSON parsing fails
+        tool_decision = {
+            "tools_needed": ["expense"],
+            "reasoning": "Default fallback",
+            "execution_order": ["expense"],
+        }
+
+    print(f"🔧 Tool Selection: {tool_decision}")
+
+    # Execute tools sequentially based on LLM decision
+    tool_results = []
+
+    for tool_name in tool_decision.get(
+        "execution_order", tool_decision.get("tools_needed", ["expense"])
+    ):
+        print(f"⚙️ Executing {tool_name} tool...")
+
+        if tool_name == "analyze_expense_data":
+            # Call the tool using the invoke method
+            result = analyze_expense_data.invoke(
+                {
+                    "question": question,
+                    "dataset": expense_dataset,
+                    "data_description": expense_description,
+                    "prompt": agent_prompt,
+                }
+            )
+
+        elif tool_name == "analyze_budget_data":
+            result = analyze_budget_data.invoke(
+                {
+                    "question": question,
+                    "dataset": budget_dataset,
+                    "data_description": budget_description,
+                    "prompt": agent_prompt,
+                }
+            )
+        else:
+            continue
+
+        tool_results.append({"tool": tool_name, "result": result})
+
+        # Display any generated plots
+        additional_kwargs = {}
+        if result.get("figure"):
+            display_saved_plot(result["figure"])
+            # Additional keyword arguments
+            additional_kwargs["figure_path"] = result["figure"]
+
+    print(
+        f"📊 Tool execution completed. Generated results from {len(tool_results)} tools."
     )
 
-    return [
-        HumanMessage(
-            content=message,
-            name="HY_Expense_Agent",
-            additional_kwargs=additional_kwargs,
-        )
-    ]
+    # TASK 2: LLM generates final response based on tool execution results
+    final_response_prompt = f"""
+    You are an intelligent response generator. Based on the user's question and the results from tool execution, generate a comprehensive final answer.
+    
+    User Question: {question}
+    
+    Tool Execution Results:
+    {chr(10).join([f"Tool: {tr['tool']}\nApproach: {tr['result'].get('approach', 'N/A')}\nAnswer: {tr['result'].get('answer', 'N/A')}\n" for tr in tool_results])}
+    
+    Your task is to:
+    1. Synthesize the information from all tool results
+    2. Provide a clear, comprehensive answer to the user's question
+    3. if image from any tool is generated, show it to the user with a short description of the image.
+    4. Highlight key insights and findings
+    5. Present the information in a structured, easy-to-understand format
+    6. Do not include any external information or additional supporting text. Use only the tool’s response to generate the final answer.
+
+    Generate a final response that directly answers the user's question using the tool results.
+    """
+
+    print("🤖 LLM Task 2: Generating final response...")
+    final_response = llm.invoke(final_response_prompt)
+
+    # Create the final message
+    message = f"{final_response.content}"
+    # Add response to memory
+    supervisor_memory.chat_memory.add_ai_message(f"[Insight Agent] {message}")
+    # Return with FINISH to end the workflow
+    return {
+        "messages": [
+            HumanMessage(
+                content=message,
+                name="Insight Agent",
+                additional_kwargs=additional_kwargs,
+            )
+        ],
+        "next": "FINISH",  # Changed from "supervisor" to "FINISH"
+    }
 
 
-def CYExpense_agent(state: AgentState, cy_agent):
-    """CY(Current Year) Expense Agent is responsible for analyzing current year expense data to generate insights."""
-    question = state["messages"][len(state["messages"]) - 2].content
-    response = cy_agent.generate_response(question)
+# Function to create the workflow graph (FIXED)
+def get_graph(
+    expense_dataset,
+    budget_dataset,
+    expense_description,
+    budget_description,
+    agent_prompt,
+    memory_instance,
+):
+    """Create and return the workflow graph with a single insight agent."""
 
-    additional_kwargs = {}
-    if response["figure"]:
-        display_saved_plot(response["figure"])
-        additional_kwargs["figure_path"] = response["figure"]
-
-    print("internal", response)
-
-    message = (
-        response["approach"]
-        + "\nSolution we got from this approach is:\n"
-        + response["answer"]
-    )
-
-    return [
-        HumanMessage(
-            content=message,
-            name="CY_Expense_Agent",
-            additional_kwargs=additional_kwargs,
-        )
-    ]
-
-
-def Budget_agent(state: AgentState, budget_agent):
-    """Budget Agent is responsible for analyzing budget-related data to generate insights."""
-    question = state["messages"][len(state["messages"]) - 2].content
-    response = budget_agent.generate_response(question)
-
-    additional_kwargs = {}
-    if response["figure"]:
-        display_saved_plot(response["figure"])
-        additional_kwargs["figure_path"] = response["figure"]
-
-    message = (
-        response["approach"]
-        + "\nSolution we got from this approach is:\n"
-        + response["answer"]
-    )
-
-    return [
-        HumanMessage(
-            content=message,
-            name="Budget_Agent",
-            additional_kwargs=additional_kwargs,
-        )
-    ]
-
-
-# Function to create the workflow graph with agents as parameters
-def get_graph(hy_agent, cy_agent, budget_agent):
-    """Create and return the workflow graph with the provided agents."""
-
-    # Create agent nodes with agents as parameters using functools.partial
-    HYExpense_agent_node = functools.partial(
-        agent_node,
-        agent=lambda state: HYExpense_agent(state, hy_agent),
-        name="Historical Expense Agent",
-    )
-    CYExpense_agent_node = functools.partial(
-        agent_node,
-        agent=lambda state: CYExpense_agent(state, cy_agent),
-        name="CY Expense Agent",
-    )
-    Budget_agent_node = functools.partial(
-        agent_node,
-        agent=lambda state: Budget_agent(state, budget_agent),
-        name="Budget Agent",
+    # Create the insight agent node
+    insight_agent_node = functools.partial(
+        insight_agent_workflow,
+        expense_dataset=expense_dataset,
+        budget_dataset=budget_dataset,
+        expense_description=expense_description,
+        budget_description=budget_description,
+        agent_prompt=agent_prompt,
     )
     supervisor_node_partial = functools.partial(supervisor_node, chain=supervisor_chain)
 
     # Build the workflow graph
     workflow = StateGraph(AgentState)
-    workflow.add_node("Historical Expense Agent", HYExpense_agent_node)
-    workflow.add_node("CY Expense Agent", CYExpense_agent_node)
-    workflow.add_node("Budget Agent", Budget_agent_node)
+    workflow.add_node("Insight Agent", insight_agent_node)
     workflow.add_node("supervisor", supervisor_node_partial)
 
     # Add edges
-    for member in members:
-        if member["agent_name"] != "SELF_RESPONSE":
-            workflow.add_edge(member["agent_name"], "supervisor")
+    workflow.add_edge("Insight Agent", "supervisor")
 
     # Add conditional edges
-    conditional_map = {
-        k["agent_name"]: k["agent_name"]
-        for k in members
-        if k["agent_name"] != "SELF_RESPONSE"
-    }
-    conditional_map["FINISH"] = END
+    conditional_map = {"Insight Agent": "Insight Agent", "FINISH": END}
     workflow.add_conditional_edges("supervisor", lambda x: x["next"], conditional_map)
     workflow.set_entry_point("supervisor")
 
-    # Compile and return the graph
-    return workflow.compile(checkpointer=memory)
+    # Use the passed memory instance
+    return workflow.compile(checkpointer=supervisor_memory)

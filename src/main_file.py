@@ -5,21 +5,23 @@ from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
 from utilities import Agent, get_prompt_file, execute_analysis, get_graph
 import yaml
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages import HumanMessage, AIMessage
+from typing import TypedDict, Annotated
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
-class AgentLift:
+class InsightAgentLift:
     def __init__(
         self,
-        df_HY,
-        df_CY,
-        df_Budget,
+        df_expenses,
+        df_budget,
         file_path,
         model_name="gpt-4o-mini",
     ):
         """Initialize Agent-Lift system with preloaded DataFrames."""
-        self.df_HY = df_HY
-        self.df_CY = df_CY
-        self.df_Budget = df_Budget
+        self.df_expenses = df_expenses
+        self.df_budget = df_budget
 
         # Initialize LLM once
         try:
@@ -31,20 +33,16 @@ class AgentLift:
             return
 
         # Load prompts for each dataset
-        prompt_file_path_hy = f"{file_path}/prompts/Prompt_HY.txt"
-        with open(prompt_file_path_hy, "r") as file:
-            self.data_description_HY = file.read().strip()
-
-        prompt_file_path_cy = f"{file_path}/prompts/Prompt_CY.txt"
+        prompt_file_path_cy = f"{file_path}/prompts/Prompt_Expense.txt"
         with open(prompt_file_path_cy, "r") as file:
-            self.data_description_CY = file.read().strip()
+            self.data_description_expenses = file.read().strip()
 
         prompt_file_path_budget = f"{file_path}/prompts/Prompt_Budget.txt"
         with open(prompt_file_path_budget, "r") as file:
-            self.data_description_Budget = file.read().strip()
+            self.data_description_budget = file.read().strip()
 
         # Common agent prompt
-        prompt_file_path_agent = f"{file_path}/prompts/Agent_Prompt.txt"
+        prompt_file_path_agent = f"{file_path}/prompts/Insight_Agent_Prompt.txt"
         with open(prompt_file_path_agent, "r") as file:
             prompt = file.read().strip()
 
@@ -52,34 +50,33 @@ class AgentLift:
         helper_functions = {"execute_analysis": execute_analysis}
 
         # Initialize agents
-        self.HYExpenseAgent = Agent(
+        # Initialize single insight agent (for tool usage)
+        self.insight_agent = Agent(
             llm=self.llm,
             prompt=prompt,
             tools=[],
-            data_description=self.data_description_HY,
-            dataset=self.df_HY,
+            data_description=self.data_description_expenses
+            + "\n\n"
+            + self.data_description_budget,
+            dataset=pd.concat(
+                [self.df_expenses, self.df_budget], ignore_index=True
+            ),  # Combined for reference
             helper_functions=helper_functions,
         )
-        self.CYExpenseAgent = Agent(
-            llm=self.llm,
-            prompt=prompt,
-            tools=[],
-            data_description=self.data_description_CY,
-            dataset=self.df_CY,
-            helper_functions=helper_functions,
-        )
-        self.BudgetAgent = Agent(
-            llm=self.llm,
-            prompt=prompt,
-            tools=[],
-            data_description=self.data_description_Budget,
-            dataset=self.df_Budget,
-            helper_functions=helper_functions,
+
+        # Initialize memory (outside of functions)
+        self.supervisor_memory = ConversationBufferMemory(
+            memory_key="chat_history", return_messages=True
         )
 
         # Create the workflow graph with the initialized agents
         self.graph = get_graph(
-            self.HYExpenseAgent, self.CYExpenseAgent, self.BudgetAgent
+            self.df_expenses,
+            self.df_budget,
+            self.data_description_expenses,
+            self.data_description_budget,
+            prompt,
+            self.supervisor_memory,  # Pass the memory instance
         )
 
         # print("🚀 Agent-Lift System initialized!")
@@ -158,5 +155,3 @@ class AgentLift:
             else:
                 print("❌ No final answer found in the workflow.")
                 return "danger", "❌ No final answer found in the workflow."
-
-        print("=" * 60)

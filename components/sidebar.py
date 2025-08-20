@@ -9,7 +9,7 @@ from .session_state_manager import init_session_state
 
 init_session_state()
 from .ui_helpers import get_horizontal_line
-from src.main_file import AgentLift
+from main_file import InsightAgentLift
 
 
 def backend_toggle(previous_state):
@@ -20,14 +20,12 @@ def backend_toggle(previous_state):
         st.session_state["show_chat_session"] = True
         st.session_state["agent_obj"] = None
         if (
-            st.session_state["historical_expenses_data_file_name"]
-            and st.session_state["current_year_expenses_data_file_name"]
+            st.session_state["expense_data_file_name"]
             and st.session_state["budget_data_file_name"]
         ):
-            st.session_state["agent_obj"] = AgentLift(
-                df_HY=pd.DataFrame(st.session_state["historical_expenses_data"]),
-                df_CY=pd.DataFrame(st.session_state["current_year_expenses_data"]),
-                df_Budget=pd.DataFrame(st.session_state["budget_data"]),
+            st.session_state["agent_obj"] = InsightAgentLift(
+                df_expenses=pd.DataFrame(st.session_state["expense_data"]),
+                df_budget=pd.DataFrame(st.session_state["budget_data"]),
                 file_path=f"src",
                 model_name=st.session_state["model_name"],
             )
@@ -35,10 +33,9 @@ def backend_toggle(previous_state):
         # Use backend data
         st.session_state["messages"] = []
         st.session_state["show_chat_session"] = True
-        st.session_state["agent_obj"] = AgentLift(
-            df_HY=pd.DataFrame(st.session_state["backend_historical_expenses_data"]),
-            df_CY=pd.DataFrame(st.session_state["backend_current_year_expenses_data"]),
-            df_Budget=pd.DataFrame(st.session_state["backend_budget_data"]),
+        st.session_state["agent_obj"] = InsightAgentLift(
+            df_expenses=pd.DataFrame(st.session_state["backend_expense_data"]),
+            df_budget=pd.DataFrame(st.session_state["backend_budget_data"]),
             file_path=f"src",
             model_name=st.session_state["model_name"],
         )

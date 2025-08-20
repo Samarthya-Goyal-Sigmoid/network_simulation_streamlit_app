@@ -19,7 +19,7 @@ from .ui_helpers import (
     chat_avatars_color_bg,
     messages_to_text,
 )
-from src.main_file import AgentLift
+from src.main_file import InsightAgentLift
 
 text_color = "#E30A13"
 chat_container_css_styles = """
@@ -50,7 +50,7 @@ def render_chat_tab():
             add_text(text="Start Chat Session:", text_color=text_color, size=5)
         with c2:
             if st.session_state["use_backend_data"] == True:
-                possible_options = ["Historical Expense", "CY Expense", "Budget"]
+                possible_options = ["Expense", "Budget"]
                 select_options = st.multiselect(
                     "Select the dataset(s)",
                     possible_options,
@@ -60,10 +60,8 @@ def render_chat_tab():
                 )
             else:
                 possible_options = []
-                if st.session_state["historical_expenses_data_file_name"]:
-                    possible_options.append("Historical Expense")
-                if st.session_state["current_year_expenses_data_file_name"]:
-                    possible_options.append("CY Expense")
+                if st.session_state["expense_data_file_name"]:
+                    possible_options.append("Expense")
                 if st.session_state["budget_data_file_name"]:
                     possible_options.append("Budget")
                 select_options = st.multiselect(
@@ -83,31 +81,24 @@ def render_chat_tab():
                 st.session_state["show_chat_session"] = True
                 st.session_state["agent_obj"] = None
                 if st.session_state["use_backend_data"] == True:
-                    st.session_state["agent_obj"] = AgentLift(
-                        df_HY=pd.DataFrame(
-                            st.session_state["backend_historical_expenses_data"]
+                    st.session_state["agent_obj"] = InsightAgentLift(
+                        df_expenses=pd.DataFrame(
+                            st.session_state["backend_expense_data"]
                         ),
-                        df_CY=pd.DataFrame(
-                            st.session_state["backend_current_year_expenses_data"]
-                        ),
-                        df_Budget=pd.DataFrame(st.session_state["backend_budget_data"]),
+                        df_budget=pd.DataFrame(st.session_state["backend_budget_data"]),
                         file_path=f"src",
                         model_name=st.session_state["model_name"],
                     )
                 else:
                     if (
-                        st.session_state["historical_expenses_data_file_name"]
-                        and st.session_state["current_year_expenses_data_file_name"]
+                        st.session_state["expense_data_file_name"]
                         and st.session_state["budget_data_file_name"]
                     ):
-                        st.session_state["agent_obj"] = AgentLift(
-                            df_HY=pd.DataFrame(
-                                st.session_state["historical_expenses_data"]
+                        st.session_state["agent_obj"] = InsightAgentLift(
+                            df_expenses=pd.DataFrame(
+                                st.session_state["backend_expense_data"]
                             ),
-                            df_CY=pd.DataFrame(
-                                st.session_state["current_year_expenses_data"]
-                            ),
-                            df_Budget=pd.DataFrame(st.session_state["budget_data"]),
+                            df_budget=pd.DataFrame(st.session_state["budget_data"]),
                             file_path=f"src",
                             model_name=st.session_state["model_name"],
                         )
@@ -170,7 +161,7 @@ def render_chat_tab():
                                 with st.chat_message(
                                     "assistant",
                                     avatar=chat_avatars.get(
-                                        message["agent"], "Assistant"
+                                        message["agent"], chat_avatars["Assistant"]
                                     ),
                                 ):
                                     # Show the figure
@@ -261,7 +252,7 @@ def render_chat_tab():
                     with st.chat_message(
                         "assistant",
                         avatar=chat_avatars.get(
-                            previous_message_dict["next"], "Assistant"
+                            previous_message_dict["next"], chat_avatars["Assistant"]
                         ),
                     ):
                         with st.spinner("Generating..."):

@@ -1,4 +1,4 @@
-Here is an example of what one row of the data looks like in json format but I will provide you with first 5 rows of the dataframe inside <data> tags:
+Here is an example of what one row of the data looks like in json format but I will provide you with first 5 rows of the dataframe inside <data> tags.also you will receive data type of each column in <column data type> tags:
 {{
       "Country": "Mexico",
       "Tier 1": "Pull-Non-Working",
@@ -13,6 +13,18 @@ Here is an example of what one row of the data looks like in json format but I w
 {{df.head().to_string()}}
 </data>
 
+<column data type>
+{{
+      "Country": "String",
+      "Tier 1": "String",
+      "Tier 2": "String",
+      "Tier 3": "String".
+      "2023 - Split (%)": "float",
+      "2024 - Split (%)": "float",
+      "2023 - Budget": "integer" ,
+      "2024 - Budget": "integer" }}
+</column data type>
+
 Some key things to note about the data:
 - "Tier 1", "Tier 2", "Tier 3" form a hierarchical classification of marketing spending.
 - "Tier 1" include  4 values: "PULL - Non working","PUSH","PULL - working","Others" .
@@ -22,4 +34,4 @@ Some key things to note about the data:
     4.Others: Expenses outside the above categories, including price support, customer development agreements (CDAs), and other capital expenditures.
 - "Tier 2" : Major spending categories within each Tier One classification. "Tier 3" : Detailed sub-categories providing a precise breakdown of spending within each Tier Two category.
 - "2023 - Split (%)" and "2024 - Split (%)" are in percentage which representthe share of each specific expense in the total spending for that respective year.
-- "2023 - Budget" and "2024 - Budget" is in Dollar($)
+- "2023 - Budget" and "2024 - Budget" is in Dollar($). both column represent budget amount for that perticular year. 

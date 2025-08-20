@@ -37,32 +37,37 @@ def render_home():
 
         st.markdown("📊 **Upload datasets and ask questions with context-aware chat!**")
 
+    # Container css styles
+    container_home_css_styles = """
+        {
+            background-color: #FFFFFF;
+            padding-top: 1em;
+            padding-right: 1em;
+            padding-bottom: 1em;
+            padding-left: 1em;
+            border-radius: 0.5em;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-height: 520px;
+            overflow-y: auto; /* Scroll if content exceeds */
+        }
+    """
     with stylable_container(
         key="home_upload",
-        css_styles=container_css_styles,
+        css_styles=container_home_css_styles,
     ):
         add_text(text="Upload Data", text_color=text_color, size=5)
         st.markdown("")
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         with c1:
-            add_text(text="Historical Expenses", text_color="black", size=6)
+            add_text(text="Expenses", text_color="black", size=6)
             expense_uploaded_file = st.file_uploader(
                 "**Upload datasets**",
                 type=["csv", "xlsx"],
                 accept_multiple_files=False,
                 label_visibility="collapsed",
-                key="upload_historical_expenses",
+                key="upload_expenses",
             )
         with c2:
-            add_text(text="Current Year Expenses", text_color="black", size=6)
-            cy_expenses_uploaded_file = st.file_uploader(
-                "**Upload datasets**",
-                type=["csv", "xlsx"],
-                accept_multiple_files=False,
-                label_visibility="collapsed",
-                key="upload_cy_expenses",
-            )
-        with c3:
             add_text(text="Budget Data", text_color="black", size=6)
             budget_uploaded_file = st.file_uploader(
                 "**Upload datasets**",
@@ -89,45 +94,16 @@ def render_home():
                     "Tier 2",
                     "Tier 3",
                     "Expense",
-                ],
-            )
-            if status == "error":
-                error_box(message)
-            elif status == "success":
-                success_box(message)
-                st.session_state["historical_expenses_data"] = df.to_dict("records")
-                st.session_state["historical_expenses_data_file_name"] = (
-                    expense_uploaded_file.name
-                )
-
-        if cy_expenses_uploaded_file:
-            get_horizontal_line(horizontal_line_color)
-            # for uploaded_file in uploaded_files:
-            st.markdown(f"##### 📄 File: {cy_expenses_uploaded_file.name}")
-            status, message, df = parse_uploaded_file(
-                cy_expenses_uploaded_file,
-                required_cols=[
-                    "Country",
-                    "Year",
-                    "Month",
-                    "Category",
-                    "Brand",
-                    "Tier 1",
-                    "Tier 2",
-                    "Tier 3",
-                    "Description",
-                    "Expense",
                     "Status",
+                    "Approved",
                 ],
             )
             if status == "error":
                 error_box(message)
             elif status == "success":
                 success_box(message)
-                st.session_state["current_year_expenses_data"] = df.to_dict("records")
-                st.session_state["current_year_expenses_data_file_name"] = (
-                    cy_expenses_uploaded_file.name
-                )
+                st.session_state["expense_data"] = df.to_dict("records")
+                st.session_state["expense_data_file_name"] = expense_uploaded_file.name
 
         if budget_uploaded_file:
             get_horizontal_line(horizontal_line_color)
