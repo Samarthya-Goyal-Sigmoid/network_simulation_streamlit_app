@@ -147,11 +147,11 @@ def execute_analysis(df, response_text):
 
             # Combine code with answer template
             combined_code = f"""
-            {dedented_code}
+{dedented_code}
 
-            # Format the answer template
-            answer_text = f'''{segments['answer']}'''
-            """
+# Format the answer template
+answer_text = f'''{segments['answer']}'''
+"""
             print("Combined Code:\n", combined_code)
             exec(combined_code, namespace)
             results["answer"] = namespace.get("answer_text")
