@@ -169,7 +169,7 @@ def render_chat_tab():
                                         st.markdown(
                                             f"""
                                             <div style="
-                                                background-color: {chat_avatars_color_bg.get(message['agent'], 'Assistant')};
+                                                background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
                                                 color: {'black'};
                                                 border-radius: 0.5em 0.5em 0em 0em;
                                                 padding: 1em;
@@ -190,7 +190,7 @@ def render_chat_tab():
                                         st.markdown(
                                             f"""
                                             <div style="
-                                                background-color: {chat_avatars_color_bg.get(message['agent'], 'Assistant')};
+                                                background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
                                                 color: {'black'};
                                                 border-radius: 0.5em;
                                                 padding: 1em;
