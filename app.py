@@ -12,7 +12,14 @@ import warnings
 
 warnings.filterwarnings("ignore")
 import streamlit as st
+
 import pandas as pd
+import os
+import yaml
+
+import sys
+
+sys.path.append("src")
 
 # Page config
 st.set_page_config(
@@ -20,8 +27,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+with open("config.yaml", "r") as f:
+    llm_keys = yaml.safe_load(f)
+
+if llm_keys["open_ai"].strip() != "":
+    os.environ["OPENAI_API_KEY"] = llm_keys["open_ai"]
 
 # Import files
+from components.session_state_manager import init_session_state
+
+init_session_state()
+
 from components.sidebar import render_sidebar
 from components.home_tab import render_home
 from components.chat_tab import render_chat_tab
@@ -31,7 +47,6 @@ from components.settings_tab import render_settings_tab
 with open("style/custom.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# selected_tab = "Home"
 selected_tab = render_sidebar()
 # Routing
 if selected_tab == "Home":

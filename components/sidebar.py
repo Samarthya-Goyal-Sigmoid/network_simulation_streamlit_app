@@ -2,14 +2,56 @@
 from streamlit_option_menu import option_menu
 import streamlit as st
 from PIL import Image
+import pandas as pd
+
+# Import files
+from .session_state_manager import init_session_state
+
+init_session_state()
+from .ui_helpers import get_horizontal_line
+from main_file import InsightAgentLift
+
+
+def backend_toggle(previous_state):
+    # Previous state
+    if st.session_state[previous_state] == False:
+        # Do not use backend data
+        st.session_state["messages"] = []
+        st.session_state["show_chat_session"] = True
+        st.session_state["agent_obj"] = None
+        if (
+            st.session_state["expense_data_file_name"]
+            and st.session_state["budget_data_file_name"]
+        ):
+            st.session_state["agent_obj"] = InsightAgentLift(
+                df_expenses=pd.DataFrame(st.session_state["expense_data"]),
+                df_budget=pd.DataFrame(st.session_state["budget_data"]),
+                file_path=f"src",
+                model_name=st.session_state["model_name"],
+            )
+    else:
+        # Use backend data
+        st.session_state["messages"] = []
+        st.session_state["show_chat_session"] = True
+        st.session_state["agent_obj"] = InsightAgentLift(
+            df_expenses=pd.DataFrame(st.session_state["backend_expense_data"]),
+            df_budget=pd.DataFrame(st.session_state["backend_budget_data"]),
+            file_path=f"src",
+            model_name=st.session_state["model_name"],
+        )
 
 
 def render_sidebar():
     with st.sidebar:
-        logo = Image.open("logo/lift_logo.png")
-        _, c1, _ = st.columns([0.2, 0.8, 0.2])
+        logo = Image.open("logo/sigmoid_logo.png")
+        c1, c2 = st.columns([0.5, 0.5])
         with c1:
             st.image(logo, width=200)
+        logo = Image.open("logo/lift_logo.png")
+        with c2:
+            st.image(logo, width=200)
+        get_horizontal_line(color="#E30A13")
+        st.markdown("")
         selected = option_menu(
             menu_title=None,
             options=["Home", "Chat Sessions", "Settings"],
@@ -35,4 +77,13 @@ def render_sidebar():
                 },
             },
         )
+        get_horizontal_line(color="#E30A13")
+        _, c1 = st.columns([0.05, 0.95])
+        with c1:
+            st.toggle(
+                "Use backend data",
+                key="use_backend_data",
+                on_change=backend_toggle,
+                args=("use_backend_data",),
+            )
         return selected
