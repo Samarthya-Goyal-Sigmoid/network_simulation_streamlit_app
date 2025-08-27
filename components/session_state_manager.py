@@ -11,9 +11,11 @@ import pandas as pd
 def init_session_state():
     # Session state
     if "backend_expense_data" not in st.session_state:
-        st.session_state["backend_expense_data"] = pd.read_csv(
-            f"src/data/Expense.csv"
-        ).to_dict("records")
+        st.session_state["backend_expense_data"] = (
+            pd.read_csv(f"src/data/Expense.csv")
+            .drop(columns=["Count"])
+            .to_dict("records")
+        )
     if "backend_budget_data" not in st.session_state:
         df_budget = pd.read_csv(f"src/data/Budget.csv")
         for col in ["2023 - Budget", "2024 - Budget"]:
@@ -37,6 +39,15 @@ def init_session_state():
     if "agent_obj" not in st.session_state:
         st.session_state["agent_obj"] = None
     if "use_backend_data" not in st.session_state:
-        st.session_state["use_backend_data"] = False
+        st.session_state["use_backend_data"] = True
     if "model_name" not in st.session_state:
         st.session_state["model_name"] = "gpt-4o"
+    if "plot_path" not in st.session_state:
+        st.session_state["plot_path"] = "src/streamlit_plots"
+    # Open AI key
+    if "open_ai_key" not in st.session_state:
+        with open("config.yaml", "r") as f:
+            llm_keys = yaml.safe_load(f)
+        if llm_keys["open_ai"].strip() != "":
+            os.environ["OPENAI_API_KEY"] = llm_keys["open_ai"]
+        st.session_state["open_ai_key"] = llm_keys["open_ai"]

@@ -9,7 +9,7 @@ from .session_state_manager import init_session_state
 
 init_session_state()
 from .ui_helpers import get_horizontal_line
-from main_file import InsightAgentLift
+from src.multi_agents import MultiAgentSystem
 
 
 def backend_toggle(previous_state):
@@ -23,21 +23,23 @@ def backend_toggle(previous_state):
             st.session_state["expense_data_file_name"]
             and st.session_state["budget_data_file_name"]
         ):
-            st.session_state["agent_obj"] = InsightAgentLift(
-                df_expenses=pd.DataFrame(st.session_state["expense_data"]),
-                df_budget=pd.DataFrame(st.session_state["budget_data"]),
-                file_path=f"src",
+            st.session_state["agent_obj"] = MultiAgentSystem(
                 model_name=st.session_state["model_name"],
+                api_key=st.session_state["open_ai_key"],
+                expense_dataset=pd.DataFrame(st.session_state["expense_data"]),
+                budget_dataset=pd.DataFrame(st.session_state["budget_data"]),
+                plot_path=st.session_state["plot_path"],
             )
     else:
         # Use backend data
         st.session_state["messages"] = []
         st.session_state["show_chat_session"] = True
-        st.session_state["agent_obj"] = InsightAgentLift(
-            df_expenses=pd.DataFrame(st.session_state["backend_expense_data"]),
-            df_budget=pd.DataFrame(st.session_state["backend_budget_data"]),
-            file_path=f"src",
+        st.session_state["agent_obj"] = MultiAgentSystem(
             model_name=st.session_state["model_name"],
+            api_key=st.session_state["open_ai_key"],
+            expense_dataset=pd.DataFrame(st.session_state["backend_expense_data"]),
+            budget_dataset=pd.DataFrame(st.session_state["backend_budget_data"]),
+            plot_path=st.session_state["plot_path"],
         )
 
 

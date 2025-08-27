@@ -18,8 +18,9 @@ from .ui_helpers import (
     container_css_styles,
     chat_avatars_color_bg,
     messages_to_text,
+    get_base64_image,
 )
-from src.main_file import InsightAgentLift
+from src.multi_agents import MultiAgentSystem, extract_answer_content
 
 text_color = "#E30A13"
 chat_container_css_styles = """
@@ -43,9 +44,7 @@ def render_chat_tab():
         key="chat_title",
         css_styles=container_css_styles,
     ):
-        c1, c2, _, c3, c4 = st.columns(
-            [0.2, 0.45, 0.07, 0.18, 0.05], vertical_alignment="top"
-        )
+        c1, c2, _, c3 = st.columns([0.2, 0.45, 0.12, 0.18], vertical_alignment="top")
         with c1:
             add_text(text="Start Chat Session:", text_color=text_color, size=5)
         with c2:
@@ -57,6 +56,7 @@ def render_chat_tab():
                     default=possible_options,
                     placeholder="Select dataset",
                     label_visibility="collapsed",
+                    disabled=True,
                 )
             else:
                 possible_options = []
@@ -81,35 +81,33 @@ def render_chat_tab():
                 st.session_state["show_chat_session"] = True
                 st.session_state["agent_obj"] = None
                 if st.session_state["use_backend_data"] == True:
-                    st.session_state["agent_obj"] = InsightAgentLift(
-                        df_expenses=pd.DataFrame(
+                    st.session_state["agent_obj"] = MultiAgentSystem(
+                        model_name=st.session_state["model_name"],
+                        api_key=st.session_state["open_ai_key"],
+                        expense_dataset=pd.DataFrame(
                             st.session_state["backend_expense_data"]
                         ),
-                        df_budget=pd.DataFrame(st.session_state["backend_budget_data"]),
-                        file_path=f"src",
-                        model_name=st.session_state["model_name"],
+                        budget_dataset=pd.DataFrame(
+                            st.session_state["backend_budget_data"]
+                        ),
+                        plot_path=st.session_state["plot_path"],
                     )
                 else:
                     if (
                         st.session_state["expense_data_file_name"]
                         and st.session_state["budget_data_file_name"]
                     ):
-                        st.session_state["agent_obj"] = InsightAgentLift(
-                            df_expenses=pd.DataFrame(
-                                st.session_state["backend_expense_data"]
-                            ),
-                            df_budget=pd.DataFrame(st.session_state["budget_data"]),
-                            file_path=f"src",
+                        st.session_state["agent_obj"] = MultiAgentSystem(
                             model_name=st.session_state["model_name"],
+                            api_key=st.session_state["open_ai_key"],
+                            expense_dataset=pd.DataFrame(
+                                st.session_state["expense_data"]
+                            ),
+                            budget_dataset=pd.DataFrame(
+                                st.session_state["budget_data"]
+                            ),
+                            plot_path=st.session_state["plot_path"],
                         )
-        with c4:
-            chat_text = messages_to_text(st.session_state["messages"])
-            st.download_button(
-                label="⬇️",
-                data=chat_text,
-                file_name="chat_session.txt",
-                mime="text/plain",
-            )
     if st.session_state["agent_obj"]:
         # Chat session container
         if st.session_state["show_chat_session"]:
@@ -158,35 +156,14 @@ def render_chat_tab():
                                         unsafe_allow_html=True,
                                     )
                             else:
-                                with st.chat_message(
-                                    "assistant",
-                                    avatar=chat_avatars.get(
-                                        message["agent"], chat_avatars["Assistant"]
-                                    ),
-                                ):
-                                    # Show the figure
-                                    if message["figure_path"]:
-                                        st.markdown(
-                                            f"""
-                                            <div style="
-                                                background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
-                                                color: {'black'};
-                                                border-radius: 0.5em 0.5em 0em 0em;
-                                                padding: 1em;
-                                                font-size: 16px;
-                                            ">
-                                            {message["content"]}
-                                        </div>
-                                        """,
-                                            unsafe_allow_html=True,
-                                        )
-                                        display_saved_plot(
-                                            message["figure_path"],
-                                            bg_color=chat_avatars_color_bg.get(
-                                                message["agent"], "Assistant"
-                                            ),
-                                        )
-                                    else:
+                                if message["agent"] == "supervisor":
+                                    with st.chat_message(
+                                        "assistant",
+                                        avatar=chat_avatars.get(
+                                            message["agent"], chat_avatars["Assistant"]
+                                        ),
+                                    ):
+                                        # Supervisor will return a though process and enriched question
                                         st.markdown(
                                             f"""
                                             <div style="
@@ -196,11 +173,108 @@ def render_chat_tab():
                                                 padding: 1em;
                                                 font-size: 16px;
                                             ">
-                                                {message["content"]}
+                                                {'<b>Thought Process:</b>&nbsp;&nbsp;' + str(message['result']['result']['thought_process']) + '<br><br><b>Enriched Question:</b>&nbsp;&nbsp;' + str(message['result']['result']['enriched_question'])}
                                         </div>
                                         """,
                                             unsafe_allow_html=True,
                                         )
+                                elif message["agent"] == "Insight Agent":
+                                    for step in message["result"].get(
+                                        "recorder_steps", []
+                                    ):
+                                        if step.get("observation"):
+                                            approach = step["observation"]["approach"]
+                                            answer = step["observation"]["answer"]
+                                            figure = step["observation"]["figure"]
+                                            if figure:
+                                                with st.chat_message(
+                                                    "assistant",
+                                                    avatar=chat_avatars.get(
+                                                        message["agent"],
+                                                        chat_avatars["Assistant"],
+                                                    ),
+                                                ):
+                                                    tool_used = (
+                                                        "Expense Tool"
+                                                        if step["tool"]
+                                                        == "analyze_expense_data"
+                                                        else (
+                                                            "Budget Tool"
+                                                            if step["tool"]
+                                                            == "analyze_budget_data"
+                                                            else "N/A"
+                                                        )
+                                                    )
+
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em 0.5em 0em 0em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
+                                                                {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach)  + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used + '<br><br><b>Answer:</b>&nbsp;&nbsp;' + str(answer)}
+                                                            </div>
+                                                            <div style="
+                                                                display: flex;
+                                                                justify-content: center;
+                                                                border-radius: 0 0 0.5em 0.5em;
+                                                                background-color: {'white'};
+                                                            ">
+                                                                <img src="data:image/png;base64,{get_base64_image(figure)}" style="width:auto; height:auto;">
+                                                            </div>
+                                                        </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
+                                            else:
+                                                with st.chat_message(
+                                                    "assistant",
+                                                    avatar=chat_avatars.get(
+                                                        message["agent"],
+                                                        chat_avatars["Assistant"],
+                                                    ),
+                                                ):
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Answer</b>&nbsp;&nbsp;' + str(answer)}
+                                                    </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
+                                        else:
+                                            # Print final answer
+                                            with st.chat_message(
+                                                "assistant",
+                                                avatar=chat_avatars.get(
+                                                    message["agent"],
+                                                    chat_avatars["Assistant"],
+                                                ),
+                                            ):
+                                                st.markdown(
+                                                    f"""
+                                                    <div style="
+                                                        background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                        color: {'black'};
+                                                        border-radius: 0.5em;
+                                                        padding: 1em;
+                                                        font-size: 16px;
+                                                    ">
+                                                        {'<b>Final Answer:</b>&nbsp;&nbsp;' + extract_answer_content(step["final_answer"])}
+                                                </div>
+                                                """,
+                                                    unsafe_allow_html=True,
+                                                )
                     st.markdown("")
 
             chat_query_container_css_styles = """
@@ -229,8 +303,7 @@ def render_chat_tab():
                             "role": "user",
                             "agent": "User",
                             "content": prompt,
-                            "messages": [HumanMessage(content=prompt)],
-                            "figure_path": None,
+                            "result": [],
                             "next": "supervisor",
                             "call_bot": True,
                             "error_response": False,
@@ -257,18 +330,35 @@ def render_chat_tab():
                     ):
                         with st.spinner("Generating..."):
                             try:
-                                current_state = (
-                                    st.session_state["agent_obj"]
-                                    .graph.nodes[previous_message_dict["next"]]
-                                    .invoke(
-                                        {
-                                            "messages": previous_message_dict[
-                                                "messages"
-                                            ],
-                                            "next": previous_message_dict["next"],
-                                        }
+                                if previous_message_dict["next"] == "supervisor":
+                                    result = (
+                                        st.session_state["agent_obj"]
+                                        .graph.nodes[previous_message_dict["next"]]
+                                        .invoke(
+                                            {
+                                                "question": previous_message_dict[
+                                                    "content"
+                                                ]
+                                            }
+                                        )
                                     )
-                                )
+                                elif previous_message_dict["next"] == "Insight Agent":
+                                    result = (
+                                        st.session_state["agent_obj"]
+                                        .graph.nodes[previous_message_dict["next"]]
+                                        .invoke(
+                                            {
+                                                "enriched_question": previous_message_dict[
+                                                    "result"
+                                                ][
+                                                    "result"
+                                                ][
+                                                    "enriched_question"
+                                                ]
+                                            }
+                                        )
+                                    )
+                                    result["next"] = "FINISH"
                             except Exception as e:
                                 # Add the message
                                 st.session_state.messages.append(
@@ -278,8 +368,7 @@ def render_chat_tab():
                                             "next"
                                         ],  # Agent answering the query
                                         "content": f"Error in bot response. Restart the chat session.\nError traceback: {e}",
-                                        "messages": None,
-                                        "figure_path": None,
+                                        "result": [],
                                         "next": None,
                                         "call_bot": False,
                                         "error_response": True,
@@ -303,20 +392,15 @@ def render_chat_tab():
                 st.session_state.messages.append(
                     {
                         "role": "assistant",
-                        "agent": current_state["messages"][
-                            0
-                        ].name,  # Agent answering the query
-                        "content": current_state["messages"][0].content,
-                        "messages": add_messages(
-                            previous_message_dict["messages"], current_state["messages"]
-                        ),
-                        "figure_path": current_state["messages"][
-                            0
-                        ].additional_kwargs.get("figure_path", None),
-                        "next": current_state["next"],
+                        "agent": previous_message_dict[
+                            "next"
+                        ],  # Agent answering the query
+                        "content": None,
+                        "result": result,
+                        "next": result["next"],
                         "call_bot": (
                             True
-                            if (current_state["next"] != "FINISH" and counter < 10)
+                            if (result["next"] != "FINISH" and counter < 10)
                             else False
                         ),
                         "error_response": False,

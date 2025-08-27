@@ -12,7 +12,9 @@ def render_settings_tab():
     ):
         add_text(text="Settings", text_color=text_color, size=4)
         st.markdown("")
-        st.text_input("OpenAI API Key", type="password")
+        api_key = st.text_input(
+            "OpenAI API Key", type="password", value=st.session_state["open_ai_key"]
+        )
         st.write("")
         model_name = st.selectbox(
             "LLM Model",
@@ -26,4 +28,5 @@ def render_settings_tab():
         with c1:
             if st.button("Submit"):
                 st.session_state["model_name"] = model_name
+                st.session_state["open_ai_key"] = api_key
         st.write("")

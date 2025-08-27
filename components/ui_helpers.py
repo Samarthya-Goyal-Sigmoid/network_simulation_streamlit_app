@@ -115,6 +115,8 @@ def display_saved_plot(plot_path: str, bg_color="#f0f2f6"):
                 .image-container {{
                     display: flex;
                     justify-content: center;
+                    margin-top: 0em;
+                    padding-top: 0.75em;
                     padding-bottom: 0.75em;
                     border-radius: 0em 0em 0.5em 0.5em;
                     background-color: {bg_color}
