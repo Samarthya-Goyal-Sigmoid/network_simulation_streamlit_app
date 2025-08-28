@@ -28,7 +28,7 @@ You are an AI Insight Agent. You have access to TWO tools:
     - Restate the user’s question in a structured form.  
     - Select the most relevant tool (Expense or Budget).  
     - Pass the structured query and context to that tool.  
-7. Finally, provide the answer to the question in natural language inside <answer> tags. Always ensure that the final output contains the answer within the <answer> tags
+7. Finally, provide the answer to the question in natural language inside <answer> tags. Always ensure that the final output contains the answer within the <answer> tags. When chart/figure is provided (by any of the tools) ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph
 
 [EXPENSE DATASET DETAILS]
 Here is an example of expense dataset what one row of the data looks like in json format but I will provide you with first 5 rows of the dataframe inside <data> tags.also you will receive data type of each column in <column data type> tags:
@@ -87,8 +87,8 @@ Here is an example of what one row of the data looks like in json format but I w
     "Tier 3": "Digital Ad Production".
     "Historical - Split (%)": "0.003",
     "Current - Split (%)": "0.003",
-    "Historical - Budget": "375,924" ,
-    "Current - Budget": "389,021" 
+    "Historical - Budget": "375924" ,
+    "Current - Budget": "389021" 
 }}}}
 
 <data>
@@ -259,7 +259,7 @@ Return only the Python code without any explanation or markdown formatting.
    ❌ {{{{"value": "105123"}}}}
 
 Finally, provide the answer to the question in natural language inside <answer> tags. Be sure to
-include any key variables that you calculated in the code inside {{{{}}}}.
+include any key variables that you calculated in the code inside {{{{}}}}. When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph
 """
 
 insight_agent_budget_tool_prompt = """
@@ -384,5 +384,5 @@ Return only the Python code without any explanation or markdown formatting.
    ❌ {{{{"value": "105123"}}}}
 
 Finally, provide the answer to the question in natural language inside <answer> tags. Be sure to
-include any key variables that you calculated in the code inside {{{{}}}}.
+include any key variables that you calculated in the code inside {{{{}}}}. When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph
 """
