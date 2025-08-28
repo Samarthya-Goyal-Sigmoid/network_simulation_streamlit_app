@@ -95,7 +95,6 @@ def render_home():
                     "Tier 3",
                     "Expense",
                     "Status",
-                    "Approved",
                 ],
             )
             if status == "error":
@@ -116,10 +115,10 @@ def render_home():
                     "Tier 1",
                     "Tier 2",
                     "Tier 3",
-                    "2023 - Split (%)",
-                    "2024 - Split (%)",
-                    "2023 - Budget",
-                    "2024 - Budget",
+                    "Historical - Split (%)",
+                    "Current - Split (%)",
+                    "Historical - Budget",
+                    "Current - Budget",
                 ],
             )
             if status == "error":
