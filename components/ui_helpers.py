@@ -70,6 +70,10 @@ chat_avatars_color_bg = {
     "Budget Agent": lighten_color("#DC3912", lighten_amount),
     "Historical Expense Agent": lighten_color("#FF9900", lighten_amount),
     "CY Expense Agent": lighten_color("#109618", lighten_amount),
+    "User_ChatGPT": lighten_color("#0099C6", lighten_amount),
+    "Supervisor_ChatGPT": lighten_color("#FF9900", lighten_amount),
+    "Insight_Approach_ChatGPT": lighten_color("#109618", lighten_amount),
+    "Insight_Answer_ChatGPT": lighten_color("#DC3912", lighten_amount),
 }
 chat_avatars = {}
 for chat in [
@@ -86,6 +90,8 @@ for chat in [
     "CY Expense Agent",
 ]:
     chat_avatars[chat] = f"logo/avatars/{chat}.svg"
+for chat in ["Insight_ChatGPT", "Supervisor_ChatGPT", "User_ChatGPT"]:
+    chat_avatars[chat] = f"logo/avatars/{chat}.png"
 
 
 def get_horizontal_line(color):

@@ -8,6 +8,7 @@ import uuid
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import traceback
 
 # Langchain Imports
 from langchain_core.tools import tool
@@ -62,7 +63,6 @@ def execute_analysis(df, response_text, PLOT_DIR):
     try:
         # Extract code segments
         segments = extract_code_segments(response_text)
-        print("Segments are:", segments)
         if not segments:
             print("No code segments found in the response")
             return results
@@ -99,7 +99,6 @@ def execute_analysis(df, response_text, PLOT_DIR):
 # Format the answer template
 answer_text = f'''{segments['answer']}'''
 """
-            print("Combined Code:\n", combined_code)
             exec(combined_code, namespace)
             results["answer"] = namespace.get("answer_text")
 
@@ -127,5 +126,5 @@ answer_text = f'''{segments['answer']}'''
         return results
 
     except Exception as e:
-        print(f"Error during execution: {str(e)}")
+        print(f"Error during execution: {str(e)} \n{traceback.format_exc()}")
         return results

@@ -20,15 +20,7 @@ def init_session_state():
         )
         st.session_state["backend_expense_data"] = df_expense.to_dict("records")
     if "backend_budget_data" not in st.session_state:
-        df_budget = pd.read_csv(f"src/data/Budget.csv")
-        for col in ["Historical - Budget", "Current - Budget"]:
-            if col in df_budget.columns:
-                df_budget[col] = (
-                    df_budget[col]
-                    .str.replace(",", "", regex=False)
-                    .astype(float)
-                    .astype(int)
-                )
+        df_budget = pd.read_csv(f"src/data/Budget_RB.csv")
         st.session_state["backend_budget_data"] = df_budget.to_dict("records")
     if "expense_data" not in st.session_state:
         st.session_state["expense_data"] = []

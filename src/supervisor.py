@@ -128,7 +128,7 @@ supervisor_function_def = {
             "enriched_question": {
                 "title": "Enriched Question",
                 "type": "string",
-                "description": "By considering all the previous messages or conversation and the next agent to be called, frame a single line question. Keep track of these parameters while summarising: Country, Year, Month, Category, Brand, Data Type, Tier 1, Tier 2, Tier 3, Expense, Status, Historical - Split (%), Current - Split (%), Historical - Budget, Current - Budget",
+                "description": "By considering all the previous messages or conversation and the next agent to be called, frame a single line question. Keep track of these parameters while summarising: Region, Country, Year, Month, Category, Brand, Data Type, Tier 1, Tier 2, Tier 3, Expense, Status, Pep (%), Budget",
             },
         },
     },

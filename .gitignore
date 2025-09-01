@@ -1,6 +1,8 @@
 # Custom folders
 /plots
 /src/plots
+/src/jupyter_plots
+/src/streamlit_plots
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

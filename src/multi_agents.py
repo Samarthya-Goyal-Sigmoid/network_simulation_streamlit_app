@@ -30,7 +30,7 @@ from langchain.output_parsers.structured import StructuredOutputParser, Response
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory, ConversationSummaryBufferMemory
 from langchain_core.tools import Tool
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.callbacks.base import BaseCallbackHandler
@@ -45,12 +45,12 @@ from insight_prompt import (
 )
 
 
-def extract_answer_content(text: str) -> str:
+def extract_content_within_tag(text: str, tag: str) -> str:
     """
-    Extract content inside <answer>...</answer> tags.
+    Extract content inside <tag>...</tag> tags.
     If no such tags exist, return the original text.
     """
-    match = re.search(r"<answer>(.*?)</answer>", text, flags=re.DOTALL)
+    match = re.search(rf"<{tag}>(.*?)</{tag}>", text, flags=re.DOTALL)
     if match:
         return match.group(1).strip()
     return text.strip()
@@ -113,9 +113,20 @@ class MultiAgentSystem:
         # Create folder if not available
         os.makedirs(plot_path, exist_ok=True)
         self.plot_path = plot_path
-        # Initialise supervisor memory
-        self.supervisor_memory = ConversationBufferMemory(
-            memory_key="chat_history", return_messages=True
+        # Initialise memory with summarisation capability
+        # Supervisor Agent Memory
+        self.supervisor_agent_memory = ConversationSummaryBufferMemory(
+            llm=self.llm,
+            memory_key="chat_history",
+            return_messages=True,
+            max_token_limit=500,  # When token limit is exhausted, automatic summarization is triggered
+        )
+        # Insight Agent Memory
+        self.insight_agent_memory = ConversationSummaryBufferMemory(
+            llm=self.llm,
+            memory_key="chat_history",
+            return_messages=True,
+            max_token_limit=500,  # When token limit is exhausted, automatic summarization is triggered
         )
         # Supervisor chain
         self.supervisor_chain = (
@@ -192,13 +203,13 @@ class MultiAgentSystem:
         return response
 
     # Agent
-    def supervisor_agent(self, query):
+    def supervisor_agent(self, query, chat_history):
 
         # Invoke chain with enhanced context
         result = self.supervisor_chain.invoke(
             {
                 "question": query,  # Human question
-                "chat_history": [],  # Chat history placeholder
+                "chat_history": chat_history,  # Chat history placeholder
             }
         )
 
@@ -267,8 +278,9 @@ class MultiAgentSystem:
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", self.insight_agent_prompt),
+                MessagesPlaceholder("history"),  # Past user/agent conversation
                 ("human", "{input}"),
-                MessagesPlaceholder("agent_scratchpad"),
+                MessagesPlaceholder("agent_scratchpad"),  # Tool reasoning trace
             ]
         )
         agent = create_openai_functions_agent(self.llm, tools, prompt)
@@ -281,12 +293,43 @@ class MultiAgentSystem:
 
         # Supervisor Agent Node
         def supervisor_step(state: Dict[str, Any]):
+            # When supervisor agent is run
             if "question" in state:
-                result = self.supervisor_agent(state["question"])
-            elif "output" in state:
-                output_from_agent = extract_answer_content(state["output"])
+                # Memory
+                # Messages, truncated/summarized if needed
+                memory_vars = self.supervisor_agent_memory.load_memory_variables({})
                 result = self.supervisor_agent(
-                    f"Final answer by '{state['agent']}' agent: {output_from_agent}"
+                    state["question"], memory_vars["chat_history"]
+                )
+                # Add input to supervisor in the memory
+                # Input message
+                self.supervisor_agent_memory.chat_memory.add_user_message(
+                    state["question"]
+                )
+                # Output message
+                self.supervisor_agent_memory.chat_memory.add_ai_message(
+                    result["messages"][0].content
+                )
+            # When graph chain is run
+            elif "output" in state:
+                # Memory
+                # Messages, truncated/summarized if needed
+                memory_vars = self.supervisor_agent_memory.load_memory_variables({})
+                output_from_agent = extract_content_within_tag(
+                    state["output"], "answer"
+                )
+                result = self.supervisor_agent(
+                    f"Final answer by '{state['agent']}' agent: {output_from_agent}",
+                    memory_vars["chat_history"],
+                )
+                # Add output to supervisor in the memory
+                # Input message
+                self.supervisor_agent_memory.chat_memory.add_user_message(
+                    f"Final answer by '{state['agent']}' agent: {output_from_agent}",
+                )
+                # Output message
+                self.supervisor_agent_memory.chat_memory.add_ai_message(
+                    result["messages"][0].content
                 )
             else:
                 print(f"Invalid output received from agent {state['agent']}")
@@ -306,12 +349,24 @@ class MultiAgentSystem:
             # If question is not available
             if question is not None:
                 agent = self.insight_agent()
+                # Memory
+                # Messages, truncated/summarized if needed
+                memory_vars = self.insight_agent_memory.load_memory_variables({})
                 # Attach custom step recorder
                 recorder = StepRecorder()
+                # Invoke the agent
                 result = agent.invoke(
-                    {"input": f"{question}"},
+                    {
+                        "input": f"{question}",
+                        "history": memory_vars["chat_history"],
+                    },
                     config={"callbacks": [recorder]},
                 )
+                # Add to memory the input and output
+                # Input message
+                self.insight_agent_memory.chat_memory.add_user_message(result["input"])
+                # Output messsage
+                self.insight_agent_memory.chat_memory.add_ai_message(result["output"])
                 result["recorder_steps"] = recorder.steps
                 result["agent"] = "Insight Agent"
                 return result

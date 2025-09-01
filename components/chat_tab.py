@@ -20,7 +20,7 @@ from .ui_helpers import (
     messages_to_text,
     get_base64_image,
 )
-from src.multi_agents import MultiAgentSystem, extract_answer_content
+from src.multi_agents import MultiAgentSystem, extract_content_within_tag
 
 text_color = "#E30A13"
 chat_container_css_styles = """
@@ -120,11 +120,13 @@ def render_chat_tab():
                 with chat_container:
                     for message in st.session_state["messages"]:
                         if message["role"] == "user":
-                            with st.chat_message("user2", avatar=chat_avatars["User"]):
+                            with st.chat_message(
+                                "user2", avatar=chat_avatars["User_ChatGPT"]
+                            ):
                                 st.markdown(
                                     f"""
                                     <div style="
-                                        background-color: {chat_avatars_color_bg['User']};
+                                        background-color: {chat_avatars_color_bg['User_ChatGPT']};
                                         color: {'black'};
                                         border-radius: 0.5em;
                                         padding: 1em;
@@ -160,14 +162,15 @@ def render_chat_tab():
                                     with st.chat_message(
                                         "assistant",
                                         avatar=chat_avatars.get(
-                                            message["agent"], chat_avatars["Assistant"]
+                                            "Supervisor_ChatGPT",
+                                            chat_avatars["Assistant"],
                                         ),
                                     ):
                                         # Supervisor will return a though process and enriched question
                                         st.markdown(
                                             f"""
                                             <div style="
-                                                background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                background-color: {chat_avatars_color_bg.get('Supervisor_ChatGPT', chat_avatars_color_bg['Assistant'])};
                                                 color: {'black'};
                                                 border-radius: 0.5em;
                                                 padding: 1em;
@@ -179,44 +182,46 @@ def render_chat_tab():
                                             unsafe_allow_html=True,
                                         )
                                 elif message["agent"] == "Insight Agent":
-                                    for step in message["result"].get(
+                                    # Recorder steps
+                                    # Select last 2 steps
+                                    recorder_steps = message["result"].get(
                                         "recorder_steps", []
-                                    ):
+                                    )[-2:]
+                                    for step in recorder_steps:
                                         if step.get("observation"):
                                             approach = step["observation"]["approach"]
-                                            answer = step["observation"]["answer"]
+                                            # answer = step["observation"]["answer"]
                                             figure = step["observation"]["figure"]
+                                            tool_used = (
+                                                "Expense Tool"
+                                                if step["tool"]
+                                                == "analyze_expense_data"
+                                                else (
+                                                    "Budget Tool"
+                                                    if step["tool"]
+                                                    == "analyze_budget_data"
+                                                    else "N/A"
+                                                )
+                                            )
                                             if figure:
                                                 with st.chat_message(
                                                     "assistant",
                                                     avatar=chat_avatars.get(
-                                                        message["agent"],
+                                                        "Insight_ChatGPT",
                                                         chat_avatars["Assistant"],
                                                     ),
                                                 ):
-                                                    tool_used = (
-                                                        "Expense Tool"
-                                                        if step["tool"]
-                                                        == "analyze_expense_data"
-                                                        else (
-                                                            "Budget Tool"
-                                                            if step["tool"]
-                                                            == "analyze_budget_data"
-                                                            else "N/A"
-                                                        )
-                                                    )
-
                                                     st.markdown(
                                                         f"""
                                                         <div style="
-                                                            background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
                                                             color: {'black'};
                                                             border-radius: 0.5em 0.5em 0em 0em;
                                                             padding: 1em;
                                                             font-size: 16px;
                                                         ">
                                                             <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
-                                                                {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach)  + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used + '<br><br><b>Answer:</b>&nbsp;&nbsp;' + str(answer)}
+                                                                {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach)  + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used}
                                                             </div>
                                                             <div style="
                                                                 display: flex;
@@ -234,20 +239,20 @@ def render_chat_tab():
                                                 with st.chat_message(
                                                     "assistant",
                                                     avatar=chat_avatars.get(
-                                                        message["agent"],
+                                                        "Insight_ChatGPT",
                                                         chat_avatars["Assistant"],
                                                     ),
                                                 ):
                                                     st.markdown(
                                                         f"""
                                                         <div style="
-                                                            background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
                                                             color: {'black'};
                                                             border-radius: 0.5em;
                                                             padding: 1em;
                                                             font-size: 16px;
                                                         ">
-                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Answer</b>&nbsp;&nbsp;' + str(answer)}
+                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used}
                                                     </div>
                                                     """,
                                                         unsafe_allow_html=True,
@@ -257,24 +262,60 @@ def render_chat_tab():
                                             with st.chat_message(
                                                 "assistant",
                                                 avatar=chat_avatars.get(
-                                                    message["agent"],
+                                                    "Insight_ChatGPT",
                                                     chat_avatars["Assistant"],
                                                 ),
                                             ):
-                                                st.markdown(
-                                                    f"""
-                                                    <div style="
-                                                        background-color: {chat_avatars_color_bg.get(message['agent'], chat_avatars_color_bg['Assistant'])};
-                                                        color: {'black'};
-                                                        border-radius: 0.5em;
-                                                        padding: 1em;
-                                                        font-size: 16px;
-                                                    ">
-                                                        {'<b>Final Answer:</b>&nbsp;&nbsp;' + extract_answer_content(step["final_answer"])}
-                                                </div>
-                                                """,
-                                                    unsafe_allow_html=True,
+                                                answer_content = (
+                                                    extract_content_within_tag(
+                                                        step["final_answer"], "answer"
+                                                    )
                                                 )
+                                                graph_content = (
+                                                    extract_content_within_tag(
+                                                        step["final_answer"], "graph"
+                                                    )
+                                                )
+                                                if graph_content == "None":
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Answer_ChatGPT', chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            {'<b>Final Answer:</b>&nbsp;&nbsp;' + answer_content}
+                                                    </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
+                                                else:
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Answer_ChatGPT', chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em 0.5em 0em 0em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
+                                                                {'<b>Final Answer:</b>&nbsp;&nbsp;' + answer_content}
+                                                            </div>
+                                                            <div style="
+                                                                display: flex;
+                                                                justify-content: center;
+                                                                border-radius: 0 0 0.5em 0.5em;
+                                                                background-color: {'white'};
+                                                            ">
+                                                                <img src="data:image/png;base64,{get_base64_image(graph_content)}" style="width:auto; height:auto;">
+                                                            </div>
+                                                        </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
                     st.markdown("")
 
             chat_query_container_css_styles = """
@@ -322,11 +363,14 @@ def render_chat_tab():
 
                 # Get response from Bot
                 with chat_container:
+                    avatar_icon = chat_avatars["Assistant"]
+                    if previous_message_dict["next"] == "supervisor":
+                        avatar_icon = chat_avatars["Supervisor_ChatGPT"]
+                    elif previous_message_dict["next"] == "Insight Agent":
+                        avatar_icon = chat_avatars["Insight_ChatGPT"]
                     with st.chat_message(
                         "assistant",
-                        avatar=chat_avatars.get(
-                            previous_message_dict["next"], chat_avatars["Assistant"]
-                        ),
+                        avatar=avatar_icon,
                     ):
                         with st.spinner("Generating..."):
                             try:

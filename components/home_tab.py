@@ -111,14 +111,15 @@ def render_home():
             status, message, df = parse_uploaded_file(
                 budget_uploaded_file,
                 required_cols=[
+                    "Region",
                     "Country",
+                    "Year",
+                    "Brand",
                     "Tier 1",
                     "Tier 2",
                     "Tier 3",
-                    "Historical - Split (%)",
-                    "Current - Split (%)",
-                    "Historical - Budget",
-                    "Current - Budget",
+                    "Pep (%)",
+                    "Budget",
                 ],
             )
             if status == "error":
