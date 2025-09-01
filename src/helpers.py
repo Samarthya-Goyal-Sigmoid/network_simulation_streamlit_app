@@ -61,8 +61,14 @@ def execute_analysis(df, response_text, PLOT_DIR):
     }
 
     try:
+        print("Response Text:")
+        print(response_text)
+        print(110 * "-")
         # Extract code segments
         segments = extract_code_segments(response_text)
+        print("Segments:")
+        print(segments)
+        print(110 * "-")
         if not segments:
             print("No code segments found in the response")
             return results

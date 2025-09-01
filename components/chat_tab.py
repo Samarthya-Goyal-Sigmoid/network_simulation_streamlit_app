@@ -192,6 +192,7 @@ def render_chat_tab():
                                             approach = step["observation"]["approach"]
                                             # answer = step["observation"]["answer"]
                                             figure = step["observation"]["figure"]
+                                            figure = None
                                             tool_used = (
                                                 "Expense Tool"
                                                 if step["tool"]
@@ -221,7 +222,7 @@ def render_chat_tab():
                                                             font-size: 16px;
                                                         ">
                                                             <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
-                                                                {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach)  + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used}
+                                                                {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach)  + '<br><br><b>Tool(s) Used:</b>&nbsp;&nbsp;' + tool_used}
                                                             </div>
                                                             <div style="
                                                                 display: flex;
@@ -252,7 +253,7 @@ def render_chat_tab():
                                                             padding: 1em;
                                                             font-size: 16px;
                                                         ">
-                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool Used:</b>&nbsp;&nbsp;' + tool_used}
+                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool(s) Used:</b>&nbsp;&nbsp;' + tool_used}
                                                     </div>
                                                     """,
                                                         unsafe_allow_html=True,
@@ -286,7 +287,7 @@ def render_chat_tab():
                                                             padding: 1em;
                                                             font-size: 16px;
                                                         ">
-                                                            {'<b>Final Answer:</b>&nbsp;&nbsp;' + answer_content}
+                                                            {'<b>Final Answer:</b><br>' + answer_content}
                                                     </div>
                                                     """,
                                                         unsafe_allow_html=True,
@@ -302,7 +303,7 @@ def render_chat_tab():
                                                             font-size: 16px;
                                                         ">
                                                             <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
-                                                                {'<b>Final Answer:</b>&nbsp;&nbsp;' + answer_content}
+                                                                {'<b>Final Answer:</b><br>' + answer_content}
                                                             </div>
                                                             <div style="
                                                                 display: flex;
