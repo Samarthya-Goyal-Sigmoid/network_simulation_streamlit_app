@@ -183,12 +183,21 @@ def render_chat_tab():
                                         )
                                 elif message["agent"] == "Insight Agent":
                                     # Recorder steps
-                                    # Select last 2 steps
                                     recorder_steps = message["result"].get(
                                         "recorder_steps", []
-                                    )[-2:]
+                                    )
                                     for step in recorder_steps:
-                                        if step.get("observation"):
+                                        # Observation is valid and the answer is not None or blank then proceed with showing the approach
+                                        if step.get("observation") and (
+                                            not (
+                                                str(
+                                                    step.get("observation", {}).get(
+                                                        "answer", ""
+                                                    )
+                                                ).strip()
+                                                in ["None", ""]
+                                            )
+                                        ):
                                             approach = step["observation"]["approach"]
                                             tool_used = (
                                                 "Expense Tool"
