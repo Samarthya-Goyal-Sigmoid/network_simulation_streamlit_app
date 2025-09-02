@@ -11,16 +11,70 @@ import pandas as pd
 def init_session_state():
     # Session state
     if "backend_expense_data" not in st.session_state:
-        df_expense = pd.read_csv(f"src/data/Expense.csv").drop(columns=["Count"])
-        df_expense["Expense"] = (
-            df_expense["Expense"]
-            .str.replace(",", "", regex=False)
-            .astype(float)
-            .astype(int)
+        df_expenses = pd.read_csv(
+            f"src/data/Expenses_RB.csv",
+            usecols=[
+                "Region",
+                "Country",
+                "Category",
+                "Brand",
+                "Year",
+                "Time Month",
+                "Tier 1",
+                "Tier 2",
+                "Tier 3",
+                "Expense Status",
+                "Pending At",
+                "Expense Logged by (NS)",
+                "Audit Status",
+                "Audit Comments",
+                "Pep Share (USD)",
+                "Bottler Share (USD)",
+                "Total Expense (USD)",
+            ],
         )
-        st.session_state["backend_expense_data"] = df_expense.to_dict("records")
+        # Preprocessing
+        # Convert to integer
+        for col in ["Pep Share (USD)", "Bottler Share (USD)", "Total Expense (USD)"]:
+            df_expenses[col] = df_expenses[col].fillna(0)
+            df_expenses[col] = df_expenses[col].astype(int)
+        # Convert to title case format
+        for col in ["Expense Status", "Audit Status"]:
+            df_expenses[col] = df_expenses[col].str.title()
+        # Renaming columns
+        df_expenses = df_expenses.rename(
+            columns={
+                "Time Month": "Month",
+                "Expense Logged by (NS)": "Expense Logged by",
+                "Pep Share (USD)": "Pep Expense",
+                "Bottler Share (USD)": "Bottler Expense",
+                "Total Expense (USD)": "Total Expense",
+            }
+        )
+        st.session_state["backend_expense_data"] = df_expenses.to_dict("records")
     if "backend_budget_data" not in st.session_state:
-        df_budget = pd.read_csv(f"src/data/Budget_RB.csv")
+        df_budget = pd.read_csv(
+            f"src/data/Budget_RB.csv",
+            usecols=[
+                "Region",
+                "Country",
+                "Year",
+                "Category",
+                "Brand",
+                "Tier 1",
+                "Tier 2",
+                "Tier 3",
+                "Pep Budget",
+                "Bottler Budget",
+                "Budget",
+            ],
+        )
+        # Preprocessing
+        for col in ["Pep Budget", "Bottler Budget", "Budget"]:
+            df_budget[col] = df_budget[col].fillna(0)
+            df_budget[col] = df_budget[col].astype(int)
+        # Renaming columns
+        df_budget = df_budget.rename(columns={"Budget": "Total Budget"})
         st.session_state["backend_budget_data"] = df_budget.to_dict("records")
     if "expense_data" not in st.session_state:
         st.session_state["expense_data"] = []
