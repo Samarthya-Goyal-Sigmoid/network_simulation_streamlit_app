@@ -188,17 +188,10 @@ def render_chat_tab():
                                     )
                                     for step in recorder_steps:
                                         # Observation is valid and the answer is not None or blank then proceed with showing the approach
-                                        if step.get("observation") and (
-                                            not (
-                                                str(
-                                                    step.get("observation", {}).get(
-                                                        "answer", ""
-                                                    )
-                                                ).strip()
-                                                in ["None", ""]
-                                            )
-                                        ):
+                                        if step.get("observation"):
                                             approach = step["observation"]["approach"]
+                                            answer = step["observation"]["answer"]
+                                            show_answer = False
                                             tool_used = (
                                                 "Expense Tool"
                                                 if step["tool"]
@@ -217,20 +210,36 @@ def render_chat_tab():
                                                     chat_avatars["Assistant"],
                                                 ),
                                             ):
-                                                st.markdown(
-                                                    f"""
-                                                    <div style="
-                                                        background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
-                                                        color: {'black'};
-                                                        border-radius: 0.5em;
-                                                        padding: 1em;
-                                                        font-size: 16px;
-                                                    ">
-                                                        {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool(s) Used:</b>&nbsp;&nbsp;' + tool_used}
-                                                </div>
-                                                """,
-                                                    unsafe_allow_html=True,
-                                                )
+                                                if show_answer:
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool(s) Used:</b>&nbsp;&nbsp;' + tool_used + '<br><br><b>Answer:</b>&nbsp;&nbsp;' + str(answer)}
+                                                    </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
+                                                else:
+                                                    st.markdown(
+                                                        f"""
+                                                        <div style="
+                                                            background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
+                                                            color: {'black'};
+                                                            border-radius: 0.5em;
+                                                            padding: 1em;
+                                                            font-size: 16px;
+                                                        ">
+                                                            {'<b>Approach:</b>&nbsp;&nbsp;' + str(approach) + '<br><br><b>Tool(s) Used:</b>&nbsp;&nbsp;' + tool_used}
+                                                    </div>
+                                                    """,
+                                                        unsafe_allow_html=True,
+                                                    )
                                         else:
                                             # Print final answer
                                             with st.chat_message(
