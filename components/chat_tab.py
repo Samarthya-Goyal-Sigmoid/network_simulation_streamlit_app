@@ -39,6 +39,7 @@ chat_container_css_styles = """
 
 default_supervisor_expanded = False
 default_insight_agent_expanded = False
+show_answer = False
 
 
 def render_chat_tab():
@@ -206,7 +207,6 @@ def render_chat_tab():
 
                                     # Show the non-answer steps
                                     if len(non_answer_steps) > 0:
-                                        show_answer = False
                                         display_response = ""
                                         # Loop through the steps to put in one container
                                         for step in non_answer_steps:
