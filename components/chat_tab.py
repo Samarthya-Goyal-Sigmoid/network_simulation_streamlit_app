@@ -37,6 +37,9 @@ chat_container_css_styles = """
     }
 """
 
+default_supervisor_expanded = False
+default_insight_agent_expanded = False
+
 
 def render_chat_tab():
     # Header container
@@ -167,7 +170,8 @@ def render_chat_tab():
                                         ),
                                     ):
                                         with st.expander(
-                                            "Supervisor Agent Response", expanded=False
+                                            "Supervisor Agent Response",
+                                            expanded=default_supervisor_expanded,
                                         ):
                                             # Supervisor will return a though process and enriched question
                                             st.markdown(
@@ -269,7 +273,8 @@ def render_chat_tab():
                                             ),
                                         ):
                                             with st.expander(
-                                                "Insight Agent Approach", expanded=False
+                                                "Insight Agent Approach",
+                                                expanded=default_insight_agent_expanded,
                                             ):
                                                 st.markdown(
                                                     f"""
@@ -301,7 +306,9 @@ def render_chat_tab():
                                             graph_content = extract_content_within_tag(
                                                 answer_step["final_answer"], "graph"
                                             )
-                                            if graph_content == "None":
+                                            if (graph_content in [None, "None"]) | (
+                                                ".png" not in graph_content
+                                            ):
                                                 st.markdown(
                                                     f"""
                                                     <div style="
