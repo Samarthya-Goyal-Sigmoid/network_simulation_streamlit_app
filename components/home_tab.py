@@ -84,23 +84,49 @@ def render_home():
             status, message, df = parse_uploaded_file(
                 expense_uploaded_file,
                 required_cols=[
+                    "Region",
                     "Country",
-                    "Year",
-                    "Month",
                     "Category",
                     "Brand",
-                    "Data Type",
+                    "Year",
+                    "Time Month",
                     "Tier 1",
                     "Tier 2",
                     "Tier 3",
-                    "Expense",
-                    "Status",
+                    "Expense Status",
+                    "Pending At",
+                    "Expense Logged by (NS)",
+                    "Audit Status",
+                    "Audit Comments",
+                    "Pep Share (USD)",
+                    "Bottler Share (USD)",
+                    "Total Expense (USD)",
                 ],
             )
             if status == "error":
                 error_box(message)
             elif status == "success":
                 success_box(message)
+                # Preprocessing
+                for col in [
+                    "Pep Share (USD)",
+                    "Bottler Share (USD)",
+                    "Total Expense (USD)",
+                ]:
+                    df[col] = df[col].fillna(0)
+                    df[col] = df[col].astype(int)
+                for col in ["Expense Status", "Audit Status"]:
+                    df[col] = df[col].str.title()
+                # Renaming columns
+                df = df.rename(
+                    columns={
+                        "Time Month": "Month",
+                        "Expense Logged by (NS)": "Expense Logged by",
+                        "Pep Share (USD)": "Pep Expense",
+                        "Bottler Share (USD)": "Bottler Expense",
+                        "Total Expense (USD)": "Total Expense",
+                    }
+                )
                 st.session_state["expense_data"] = df.to_dict("records")
                 st.session_state["expense_data_file_name"] = expense_uploaded_file.name
 
@@ -114,11 +140,13 @@ def render_home():
                     "Region",
                     "Country",
                     "Year",
+                    "Category",
                     "Brand",
                     "Tier 1",
                     "Tier 2",
                     "Tier 3",
-                    "Pep (%)",
+                    "Pep Budget",
+                    "Bottler Budget",
                     "Budget",
                 ],
             )
@@ -126,5 +154,11 @@ def render_home():
                 error_box(message)
             elif status == "success":
                 success_box(message)
+                # Preprocessing
+                for col in ["Pep Budget", "Bottler Budget", "Budget"]:
+                    df[col] = df[col].fillna(0)
+                    df[col] = df[col].astype(int)
+                # Renaming columns
+                df = df.rename(columns={"Budget": "Total Budget"})
                 st.session_state["budget_data"] = df.to_dict("records")
                 st.session_state["budget_data_file_name"] = budget_uploaded_file.name
