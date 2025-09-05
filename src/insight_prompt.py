@@ -254,8 +254,17 @@ Return only the Python code without any explanation or markdown formatting.
 6. For the numerical values for "Pep Share", "Bottler Share", "Total Expense" do not provide any decimals values. It must be integer. 
 7. For the numerical values for split percentages provide values upto 5 decimals.
 
-Finally, provide the answer to the question in natural language inside <answer> tags. Be sure to include any key variables that you calculated in the code inside {{{{}}}}. 
+Finally, provide the answer to the question in natural language inside <answer> tags.
 When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph.
+
+[Rules for Python Code within <code> tags and Content with <answer tags>]
+- For <code> tags
+    - You must always create a answer_dict (keys in snake_case, values as plain int/float/pandas DataFrame) within the <code> tags. For e.g. answer_dict = {{{{"total_expense": int(result_df["Total Expense"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio)}}}}. Here "output_df" is a key wihtin answer_dict whose value is a dataframe.
+- For <answer> tags
+    - You must always reference at least one output value from answer_dict mentioned within <code> tags. For e.g, the total expense allocated for Mexico for the year 2025 is {{{{answer_dict["total_expense"]}}}}.
+    - All numbers or metrics mentioned in <answer> must come from the variables created inside <code>. Never hardcode them.
+    - Do not invent or reference scalars like value1, value2, etc. Only use fields from answer_dict mentioned within <code> tags.
+    - Any <answer> without values from the code is invalid.
 """
 
 insight_agent_budget_tool_prompt = """
@@ -390,17 +399,6 @@ Distributions: sns.histplot() or sns.kdeplot()
 
 Return only the Python code without any explanation or markdown formatting.
 
-[Code & Variable Consistency Rules]
-1. Never assume that a variable already exists. 
-    - Only use variables that are explicitly created in the tool’s output.
-    - If you refer to a variable in further instructions, ensure it was actually defined.
-2. After generating code:
-    - Verify that every variable used in the final line(s) of code has been defined earlier in the same code block.
-    - If a variable is missing, regenerate the code to explicitly define it.
-3. If the output from the tool does not include the expected variable, retry the tool with a clarified instruction until the variable is present.
-    - Never fabricate variable values.
-    - Maximum of 2 retries, then explain to the user what failed.
-
 ⚠️ IMPORTANT INSTRUCTIONS ABOUT NUMBERS (In writing Python Code for generating answer and generating graph):
 1. Always treat numerical values as **numeric types**, not strings.
 2. Do not concatenate numbers or output them as continuous strings.
@@ -412,6 +410,15 @@ Return only the Python code without any explanation or markdown formatting.
 6. For the numerical values for "Pep Budget", "Bottler Budget", "Budget" do not provide any decimals values. It must be integer. 
 7. For the numerical values for split percentages provide values upto 5 decimals.
 
-Finally, provide the answer to the question in natural language inside <answer> tags. Be sure to include any key variables that you calculated in the code inside {{{{}}}}. 
+Finally, provide the answer to the question in natural language inside <answer> tags. 
 When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph.
+
+[Rules for Python Code within <code> tags and Content with <answer tags>]
+- For <code> tags
+    - You must always create a answer_dict (keys in snake_case, values as plain int/float/pandas DataFrame) within the <code> tags. For e.g. answer_dict = {{{{"total_budget": int(result_df["Total Budget"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio)}}}}. Here "output_df" is a key wihtin answer_dict whose value is a dataframe.
+- For <answer> tags
+    - You must always reference at least one output value from answer_dict mentioned within <code> tags. For e.g, the total budget allocated for Mexico for the year 2025 is {{{{answer_dict["total_budget"]}}}}.
+    - All numbers or metrics mentioned in <answer> must come from the variables created inside <code>. Never hardcode them.
+    - Do not invent or reference scalars like value1, value2, etc. Only use fields from answer_dict mentioned within <code> tags.
+    - Any <answer> without values from the code is invalid.
 """
