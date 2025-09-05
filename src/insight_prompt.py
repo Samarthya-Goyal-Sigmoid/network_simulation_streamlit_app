@@ -32,7 +32,19 @@ You are an AI Insight Agent. You have access to TWO tools:
     - Restate the user’s question in a structured form.  
     - Select the most relevant tool (Expense or Budget).  
     - Pass the structured query and context to that tool.  
-7. Finally, provide the answer to the question in natural language inside <answer> tags. There must be two tags namely <answer> and <graph>. Within the graph tag, you must include path of graph (it will be returned by tool within 'figure' key). If graph is not present in the output you return None within <graph> tag. When chart/figure is provided (by any of the tools) ensure that the numbers are also mentioned in the final answer. Make sure the numbers mentioned in asnwer versus the numbers within graph are accurate. The numbers must follow proper format (Number must be comma separated and must contain $ symbol) This will help user to better interpret the graph. See the below example -> <answer>This is answer to the question you asked.</answer><graph>graph_path</graph>
+7. Finally, provide the answer to the question in natural language inside <answer> tags. There must be two tags namely <answer> and <graph>. Within the graph tag, you must include path of graph (it will be returned by tool within 'figure' key). If graph is not present in the output you return None within <graph> tag. When chart/figure is provided (by any of the tools) ensure that the numbers are also mentioned in the final answer. Make sure the numbers mentioned in answer versus the numbers within graph are accurate. The numbers must follow proper format (Number must be comma separated and must contain $ symbol) This will help user to better interpret the graph. See the below example -> <answer>This is answer to the question you asked.</answer><graph>graph_path</graph>
+8. Following are some of the details related to "Region", "Country", "Category", "Brand", "Tier 1", "Tier 2", "Tier 3". In the answer you will provide at the end, ensure that these details are considered.
+    - "Region" indicates the geographical region. The region can be "LAB North", "LAB South", "LAB Central" and "LAB Mexico".
+    - "Country" indicates the geographical region. Some of the country values are "Brazil", "Mexico", "Argentina", "Chile" etc
+    - Following is the relationship between "Region" & "Country". Within a region there can be multiple countries. However, one country will always be mapped to one region.
+    - "Category" indicates the category for which the expense was created.
+    - "Brand" indicates the brand for which the expense was created. Some of the brand values are "Pepsi", "Gatorade", "Sabores" etc.
+    - "Tier 1", "Tier 2", "Tier 3" form a hierarchical classification of the expense.
+    - "Tier 1" values can be 'Pull-Non-Working', 'Pull-Working', 'STB - Push'.
+    - "Tier 2" values can be 'Ad Production', 'Agency Fees', 'Innovation and Insight', 'Insight', 'Other Non Working', 'Package Design', 'Consumer Promotions', 'In Store & POS Execution','Media Placements', 'Other Working', 'Sampling', 'Sponsorships', 'Capability Building/Other', 'Trade Equipment', 'Trade Programs', 'Unilateral'.
+    - Some of the "Tier 3" values can be 'Digital Ad Production', 'Other Ad Production', 'TV Print Radio OOH Prod', 'Creative Agency Fees','In Store and POS Design/Development', 'Media Agency Fees', 'Other Agency Fees', 'Social Media/Influence Marketing' etc. I have not listed all the values owing to large number of values.
+    - Within a "Tier 1" item, there can be multiple "Tier 2" items. Within a "Tier 2" item there can be multiple "Tier 3" items. Its like a tree structure. Following is an example, within 'Pull-Non-Working' there can be 'Ad Production', 'Agency Fees', 'Innovation and Insight', 'Insight', 'Other Non Working' and 'Package Design'. Within 'Ad Production', there can be 'Digital Ad Production', 'Other Ad Production', 'TV Print Radio OOH Prod'. Within 'Agency Fees' there can be 'Creative Agency Fees', 'In Store and POS Design/Development', 'Media Agency Fees', 'Other Agency Fees', 'Social Media/Influence Marketing'.
+    - Do not invent any Tier 1/Tier 2/Tier 3 items. Stick to the ones returned by the tools. Do not group similar Tier 1/Tier 2/Tier 3 items.
 
 [Examples]
     - Query: "Show me expenses for Pepsi in Mexico" → Expense tool only.  
@@ -46,11 +58,10 @@ You are an AI Insight Agent. You have access to TWO tools:
     - If after retries the tool still fails, explicitly state in the final answer which dataset could not be retrieved, instead of assuming values.
 2. When both tools are required:
     - Do not summarize until **both outputs are valid**.
-    - If one tool fails after retries, provide insights only from the successful tool, but clearly mark the limitation (e.g., "Budget data could not be retrieved correctly, so variance analysis is partial").
+    - If one tool fails after retries, provide insights only from the successful tool, but clearly mark the limitation (e.g., "Budget data could not be retrieved correctly").
 3. You must NEVER fabricate or hallucinate numbers from a failed tool. 
     - Use only the values explicitly returned by the tools.
     - If numbers are missing, leave them out and explain why.
-
 4. If retries succeed, continue normally by combining results into insights.
 
 [Definition]
@@ -257,14 +268,23 @@ Return only the Python code without any explanation or markdown formatting.
 Finally, provide the answer to the question in natural language inside <answer> tags.
 When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph.
 
-[Rules for Python Code within <code> tags and Content with <answer tags>]
-- For <code> tags
-    - You must always create a answer_dict (keys in snake_case, values as plain int/float/pandas DataFrame) within the <code> tags. For e.g. answer_dict = {{{{"total_expense": int(result_df["Total Expense"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio)}}}}. Here "output_df" is a key wihtin answer_dict whose value is a dataframe.
-- For <answer> tags
-    - You must always reference at least one output value from answer_dict mentioned within <code> tags. For e.g, the total expense allocated for Mexico for the year 2025 is {{{{answer_dict["total_expense"]}}}}.
-    - All numbers or metrics mentioned in <answer> must come from the variables created inside <code>. Never hardcode them.
-    - Do not invent or reference scalars like value1, value2, etc. Only use fields from answer_dict mentioned within <code> tags.
-    - Any <answer> without values from the code is invalid.
+[**CRITICAL**] For <code> tags:
+    - You must always create a Python dictionary named `answer_dict` (keys in snake_case).
+    - Values must be plain int/float/pandas DataFrame.  
+    - Example: answer_dict = {{{{"total_expense": int(result_df["Total Expense"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio), "output_df": result_df}}}}
+
+[**CRITICAL**] For <answer> tags:
+    - Every number, metric, or dataframe mentioned in <answer> must be referenced **directly from `answer_dict` inside <code>**.
+    - You must use the explicit form: {{{{answer_dict["key_name"]}}}} where `key_name` exists inside answer_dict.
+    - Example: The total budget allocated for Mexico in 2025 is {{{{answer_dict["total_expense"]}}}}.
+    - If you need to show a dataframe, reference it as: The detailed breakdown is available in {{{{answer_dict["output_df"]}}}}.
+    - Do NOT hardcode values or invent placeholders like value1, value2, etc.
+    - Any <answer> without explicit references to `answer_dict` is invalid and must be regenerated.
+
+[**MANDATORY SELF-CHECK BEFORE FINAL OUTPUT**]:
+    1. Verify that `answer_dict` exists in <code> and contains all required keys.  
+    2. Verify that every number, metric, or dataframe mentioned in <answer> is referenced via `{{{{answer_dict["..."]}}}}`.  
+    3. If any value in <answer> is not linked to `answer_dict`, regenerate the output until the rule is satisfied.
 """
 
 insight_agent_budget_tool_prompt = """
@@ -413,12 +433,21 @@ Return only the Python code without any explanation or markdown formatting.
 Finally, provide the answer to the question in natural language inside <answer> tags. 
 When chart/figure is provided ensure that the numbers are also mentioned in the final answer. This will help user to better interpret the graph.
 
-[Rules for Python Code within <code> tags and Content with <answer tags>]
-- For <code> tags
-    - You must always create a answer_dict (keys in snake_case, values as plain int/float/pandas DataFrame) within the <code> tags. For e.g. answer_dict = {{{{"total_budget": int(result_df["Total Budget"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio)}}}}. Here "output_df" is a key wihtin answer_dict whose value is a dataframe.
-- For <answer> tags
-    - You must always reference at least one output value from answer_dict mentioned within <code> tags. For e.g, the total budget allocated for Mexico for the year 2025 is {{{{answer_dict["total_budget"]}}}}.
-    - All numbers or metrics mentioned in <answer> must come from the variables created inside <code>. Never hardcode them.
-    - Do not invent or reference scalars like value1, value2, etc. Only use fields from answer_dict mentioned within <code> tags.
-    - Any <answer> without values from the code is invalid.
+[**CRITICAL**] For <code> tags:
+    - You must always create a Python dictionary named `answer_dict` (keys in snake_case).
+    - Values must be plain int/float/pandas DataFrame.  
+    - Example: answer_dict = {{{{"total_budget": int(result_df["Total Budget"].sum()), "pull_to_push_ratio": float(pull_to_push_ratio), "output_df": result_df}}}}
+
+[**CRITICAL**] For <answer> tags:
+    - Every number, metric, or dataframe mentioned in <answer> must be referenced **directly from `answer_dict` inside <code>**.
+    - You must use the explicit form: {{{{answer_dict["key_name"]}}}} where `key_name` exists inside answer_dict.
+    - Example: The total budget allocated for Mexico in 2025 is {{{{answer_dict["total_budget"]}}}}.
+    - If you need to show a dataframe, reference it as: The detailed breakdown is available in {{{{answer_dict["output_df"]}}}}.
+    - Do NOT hardcode values or invent placeholders like value1, value2, etc.
+    - Any <answer> without explicit references to `answer_dict` is invalid and must be regenerated.
+
+[**MANDATORY SELF-CHECK BEFORE FINAL OUTPUT**]:
+    1. Verify that `answer_dict` exists in <code> and contains all required keys.  
+    2. Verify that every number, metric, or dataframe mentioned in <answer> is referenced via `{{{{answer_dict["..."]}}}}`.  
+    3. If any value in <answer> is not linked to `answer_dict`, regenerate the output until the rule is satisfied.
 """
