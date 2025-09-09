@@ -19,6 +19,8 @@ from .ui_helpers import (
     chat_avatars_color_bg,
     messages_to_text,
     get_base64_image,
+    display_content_type_1,
+    display_content_type_2,
 )
 from src.multi_agents import MultiAgentSystem, extract_content_within_tag
 
@@ -127,19 +129,9 @@ def render_chat_tab():
                             with st.chat_message(
                                 "user2", avatar=chat_avatars["User_ChatGPT"]
                             ):
-                                st.markdown(
-                                    f"""
-                                    <div style="
-                                        background-color: {chat_avatars_color_bg['User_ChatGPT']};
-                                        color: {'black'};
-                                        border-radius: 0.5em;
-                                        padding: 1em;
-                                        font-size: 16px;
-                                    ">
-                                        {message["content"]}
-                                    </div>
-                                    """,
-                                    unsafe_allow_html=True,
+                                display_content_type_1(
+                                    message["content"],
+                                    chat_avatars_color_bg["User_ChatGPT"],
                                 )
                         elif message["role"] == "assistant":
                             if message["error_response"] == True:
@@ -147,19 +139,9 @@ def render_chat_tab():
                                     "assistant",
                                     avatar=chat_avatars["Error"],
                                 ):
-                                    st.markdown(
-                                        f"""
-                                            <div style="
-                                                background-color: {chat_avatars_color_bg["Error"]};
-                                                color: {'black'};
-                                                border-radius: 0.5em;
-                                                padding: 1em;
-                                                font-size: 16px;
-                                            ">
-                                                {message["content"]}
-                                        </div>
-                                        """,
-                                        unsafe_allow_html=True,
+                                    display_content_type_1(
+                                        message["content"],
+                                        chat_avatars_color_bg["Error"],
                                     )
                             else:
                                 if message["agent"] == "supervisor":
@@ -174,21 +156,85 @@ def render_chat_tab():
                                             "Supervisor Agent Response",
                                             expanded=default_supervisor_expanded,
                                         ):
+                                            supervisor_content = ""
+                                            if message["result"]["type"] == "agent":
+                                                supervisor_content = (
+                                                    "<b>Thought Process:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "thought_process"
+                                                        ]
+                                                    )
+                                                    + "<br><br><b>Enriched Question:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "enriched_question"
+                                                        ]
+                                                    )
+                                                )
+                                            elif (
+                                                message["result"]["type"]
+                                                == "direct_response"
+                                            ):
+                                                supervisor_content = (
+                                                    "<b>Thought Process:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "thought_process"
+                                                        ]
+                                                    )
+                                                    + "<br><br><b>Direct Response:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["messages"][
+                                                            0
+                                                        ].content
+                                                    )
+                                                )
+                                            elif (
+                                                message["result"]["type"]
+                                                == "no_direct_response"
+                                            ):
+                                                supervisor_content = (
+                                                    "<b>Thought Process:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "thought_process"
+                                                        ]
+                                                    )
+                                                    + "<br><br><b>Thought Process/Response:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["messages"][
+                                                            0
+                                                        ].content
+                                                    )
+                                                )
+                                            elif (
+                                                message["result"]["type"]
+                                                == "tier_mapping_error"
+                                            ):
+                                                supervisor_content = (
+                                                    "<b>Thought Process:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "thought_process"
+                                                        ]
+                                                    )
+                                                    + "<br><br><b>Tier Mapping Error:</b>&nbsp;&nbsp;"
+                                                    + str(
+                                                        message["result"]["result"][
+                                                            "tier_mapping_error"
+                                                        ]
+                                                    )
+                                                )
+
                                             # Supervisor will return a though process and enriched question
-                                            st.markdown(
-                                                f"""
-                                                <div style="
-                                                    background-color: {chat_avatars_color_bg.get('Supervisor_ChatGPT', chat_avatars_color_bg['Assistant'])};
-                                                    color: {'black'};
-                                                    border-radius: 0.5em;
-                                                    padding: 1em;
-                                                    font-size: 16px;
-                                                    margin-bottom: 1em
-                                                ">
-                                                    {'<b>Thought Process:</b>&nbsp;&nbsp;' + str(message['result']['result']['thought_process']) + '<br><br><b>Enriched Question:</b>&nbsp;&nbsp;' + str(message['result']['result']['enriched_question'])}
-                                            </div>
-                                            """,
-                                                unsafe_allow_html=True,
+                                            display_content_type_1(
+                                                supervisor_content,
+                                                chat_avatars_color_bg.get(
+                                                    "Supervisor_ChatGPT",
+                                                    chat_avatars_color_bg["Assistant"],
+                                                ),
+                                                margin_bottom="1em",
                                             )
                                 elif message["agent"] == "Insight Agent":
                                     # Recorder steps
@@ -276,20 +322,15 @@ def render_chat_tab():
                                                 "Insight Agent Approach",
                                                 expanded=default_insight_agent_expanded,
                                             ):
-                                                st.markdown(
-                                                    f"""
-                                                        <div style="
-                                                            background-color: {chat_avatars_color_bg.get('Insight_Approach_ChatGPT', chat_avatars_color_bg['Assistant'])};
-                                                            color: {'black'};
-                                                            border-radius: 0.5em;
-                                                            padding: 1em;
-                                                            font-size: 16px;
-                                                            margin-bottom: 1em
-                                                        ">
-                                                            {display_response}
-                                                    </div>
-                                                    """,
-                                                    unsafe_allow_html=True,
+                                                display_content_type_1(
+                                                    display_response,
+                                                    chat_avatars_color_bg.get(
+                                                        "Insight_Approach_ChatGPT",
+                                                        chat_avatars_color_bg[
+                                                            "Assistant"
+                                                        ],
+                                                    ),
+                                                    margin_bottom="1em",
                                                 )
                                     # Show the answer step
                                     if answer_step is not None:
@@ -306,47 +347,36 @@ def render_chat_tab():
                                             graph_content = extract_content_within_tag(
                                                 answer_step["final_answer"], "graph"
                                             )
-                                            if (graph_content in [None, "None"]) | (
-                                                ".png" not in graph_content
-                                            ):
-                                                st.markdown(
-                                                    f"""
-                                                    <div style="
-                                                        background-color: {chat_avatars_color_bg.get('Insight_Answer_ChatGPT', chat_avatars_color_bg['Assistant'])};
-                                                        color: {'black'};
-                                                        border-radius: 0.5em;
-                                                        padding: 1em;
-                                                        font-size: 16px;
-                                                    ">
-                                                        {'<b>Final Answer:</b><br>' + answer_content}
-                                                </div>
-                                                """,
-                                                    unsafe_allow_html=True,
+                                            # Split the graphs
+                                            # Filter for applicable graph content
+                                            filtered_graph_content = [
+                                                g.strip()
+                                                for g in graph_content.split("|")
+                                                if ".png" in g.strip()
+                                            ]
+                                            if len(filtered_graph_content) == 0:
+                                                display_content_type_1(
+                                                    "<b>Final Answer:</b><br>"
+                                                    + answer_content,
+                                                    chat_avatars_color_bg.get(
+                                                        "Insight_Answer_ChatGPT",
+                                                        chat_avatars_color_bg[
+                                                            "Assistant"
+                                                        ],
+                                                    ),
+                                                    margin_bottom="0em",
                                                 )
                                             else:
-                                                st.markdown(
-                                                    f"""
-                                                    <div style="
-                                                        background-color: {chat_avatars_color_bg.get('Insight_Answer_ChatGPT', chat_avatars_color_bg['Assistant'])};
-                                                        color: {'black'};
-                                                        border-radius: 0.5em 0.5em 0em 0em;
-                                                        padding: 1em;
-                                                        font-size: 16px;
-                                                    ">
-                                                        <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
-                                                            {'<b>Final Answer:</b><br>' + answer_content}
-                                                        </div>
-                                                        <div style="
-                                                            display: flex;
-                                                            justify-content: center;
-                                                            border-radius: 0 0 0.5em 0.5em;
-                                                            background-color: {'white'};
-                                                        ">
-                                                            <img src="data:image/png;base64,{get_base64_image(graph_content)}" style="width:auto; height:auto;">
-                                                        </div>
-                                                    </div>
-                                                """,
-                                                    unsafe_allow_html=True,
+                                                display_content_type_2(
+                                                    "<b>Final Answer:</b><br>"
+                                                    + answer_content,
+                                                    chat_avatars_color_bg.get(
+                                                        "Insight_Answer_ChatGPT",
+                                                        chat_avatars_color_bg[
+                                                            "Assistant"
+                                                        ],
+                                                    ),
+                                                    filtered_graph_content,
                                                 )
                     st.markdown("")
 
