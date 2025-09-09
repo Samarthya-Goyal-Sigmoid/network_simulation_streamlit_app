@@ -36,7 +36,12 @@ from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.callbacks.base import BaseCallbackHandler
 
 # Import Support Files
-from supervisor import supervisor_prompt, supervisor_function_def
+from supervisor import (
+    supervisor_prompt,
+    supervisor_function_def,
+    tier_mapping_system_prompt,
+    tier_mapping_user_prompt,
+)
 from helpers import execute_analysis
 from insight_prompt import (
     insight_agent_prompt,
@@ -54,6 +59,20 @@ def extract_content_within_tag(text: str, tag: str) -> str:
     if match:
         return match.group(1).strip()
     return text.strip()
+
+
+def get_string_formatted_tier_mapping(df, tier_1_col, tier_2_col, tier_3_col):
+    final_str = ""
+    for tier_1_item, tier_1_grp in df.groupby(tier_1_col):
+        if final_str == "":
+            final_str = f"- {tier_1_item}"
+        else:
+            final_str = f"{final_str}\n- {tier_1_item}"
+        for tier_2_item, tier_2_grp in tier_1_grp.groupby(tier_2_col):
+            final_str = f"{final_str}\n\t- {tier_2_item}"
+            for _, row in tier_2_grp.iterrows():
+                final_str = f"{final_str}\n\t\t- {row[tier_3_col]}"
+    return final_str
 
 
 # ------------------------------
@@ -106,6 +125,17 @@ class MultiAgentSystem:
         )
         self.insight_agent_budget_tool_prompt = insight_agent_budget_tool_prompt.format(
             budget_df=budget_dataset.head().to_string()
+        )
+        self.tier_mapping_system_prompt = tier_mapping_system_prompt
+        self.tier_mapping_user_prompt = tier_mapping_user_prompt
+        # Tier mapping string
+        self.tier_mapping_str = get_string_formatted_tier_mapping(
+            pd.concat([expense_dataset, budget_dataset]).drop_duplicates(
+                subset=["Tier 1", "Tier 2", "Tier 3"]
+            ),
+            tier_1_col="Tier 1",
+            tier_2_col="Tier 2",
+            tier_3_col="Tier 3",
         )
         # Execute analysis
         self.execute_analysis = execute_analysis
@@ -202,6 +232,39 @@ class MultiAgentSystem:
         # chart_code
         return response
 
+    def extract_tier_hierarchy(self, query):
+        # Define the prompt with placeholders for variables
+        tier_mapping_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", self.tier_mapping_system_prompt.strip()),  # System message
+                (
+                    "human",
+                    self.tier_mapping_user_prompt.strip(),
+                ),  # Human question placeholder
+            ]
+        )
+        # Invoke the LLM
+        result = self.llm.invoke(
+            tier_mapping_prompt.invoke(
+                {
+                    "tier_hierarchy": self.tier_mapping_str,
+                    "user_question": query,
+                }
+            )
+        )
+        # Parse the output
+        try:
+            # Parse json
+            json_input = re.sub(
+                r"^```json\s*|\s*```$", "", result.content.strip(), flags=re.MULTILINE
+            )
+            # Get Python dict
+            parsed = json.loads(json_input)
+            return parsed
+        except Exception as e:
+            print(f"{e} \n{traceback.format_exc()}")
+            return None
+
     # Agent
     def supervisor_agent(self, query, chat_history):
 
@@ -212,7 +275,6 @@ class MultiAgentSystem:
                 "chat_history": chat_history,  # Chat history placeholder
             }
         )
-
         if result["next"] == "SELF_RESPONSE":
             # Response provided by supervisor
             if "direct_response" in result:
@@ -235,6 +297,7 @@ class MultiAgentSystem:
                     "result": result,
                     "messages": [AIMessage(content=return_response, name="supervisor")],
                     "next": "FINISH",
+                    "type": "direct_response",
                 }
             else:
                 # No direct response even if supervisor is tasked with answering the question
@@ -250,13 +313,73 @@ class MultiAgentSystem:
                         )
                     ],
                     "next": "FINISH",
+                    "type": "no_direct_response",
                 }
         else:
+            # Call the Tier hierarchy extractor
+            tier_mapping_query = result.get("enriched_question")
+            # Check for enriched question
+            if tier_mapping_query:
+                # Get Tier mapping information
+                tier_mapping_response = self.extract_tier_hierarchy(
+                    query=tier_mapping_query
+                )
+                print("Tier mapping response:")
+                print(tier_mapping_response)
+                print(110 * "-")
+                # Check if mapping information is needed
+                if tier_mapping_response:
+                    if tier_mapping_response.get("mapping_needed", False) == True:
+                        if tier_mapping_response.get("results"):
+                            json_output = tier_mapping_response["results"]
+                            # Update supervisor memory
+                            # Input
+                            self.supervisor_agent_memory.chat_memory.add_user_message(
+                                tier_mapping_query
+                            )
+                            self.insight_agent_memory.chat_memory.add_user_message(
+                                tier_mapping_query
+                            )
+                            # Output
+                            message = f"For this question, following tier(s) maybe useful in answering the query: {json_output}"
+                            self.supervisor_agent_memory.chat_memory.add_ai_message(
+                                message
+                            )
+                            self.insight_agent_memory.chat_memory.add_ai_message(
+                                message
+                            )
+                        else:
+                            message = "I am unable to get the relevant Tier 1/2/3 items for the mentioned query. Please provide appropriate mapping."
+                            result["tier_mapping_error"] = message
+                            # Update supervisor memory
+                            # Input
+                            self.supervisor_agent_memory.chat_memory.add_user_message(
+                                tier_mapping_query
+                            )
+                            self.insight_agent_memory.chat_memory.add_user_message(
+                                tier_mapping_query
+                            )
+                            # Output
+                            self.supervisor_agent_memory.chat_memory.add_ai_message(
+                                message
+                            )
+                            self.insight_agent_memory.chat_memory.add_ai_message(
+                                message
+                            )
+                            return {
+                                "result": result,
+                                "messages": [
+                                    AIMessage(content=message, name="supervisor")
+                                ],
+                                "next": "FINISH",
+                                "type": "tier_mapping_error",
+                            }
             routing_message = result.get("thought_process", "N/A")
             return {
                 "result": result,
                 "messages": [AIMessage(content=routing_message, name="supervisor")],
                 "next": result["next"],
+                "type": "agent",
             }
 
     # Agent

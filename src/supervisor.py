@@ -134,3 +134,110 @@ supervisor_function_def = {
     },
     "required": ["thought_process", "next", "enriched_question"],
 }
+
+tier_mapping_system_prompt = """
+Your a helpful assistant & strict formatter. Only respond with json following the specified schema. Do not add explanations or comments.
+"""
+
+tier_mapping_user_prompt = """
+You are an expert in Tier classification.  
+Your first task is to decide if the user’s question requires Tier mapping or not. After that you need to decide the Tier hierarchy.
+
+[TIER CLASSIFICATION UNDERSTANDING]
+Below are some of the details related to Tier classification.
+- "Tier 1", "Tier 2", "Tier 3" form a hierarchical classification of the expense.
+- "Tier 1" values can be 'Pull-Non-Working', 'Pull-Working', 'STB - Push'.
+- "Tier 2" values can be 'Ad Production', 'Agency Fees', 'Innovation and Insight', 'Insight', 'Other Non Working', 'Package Design', 'Consumer Promotions', 'In Store & POS Execution','Media Placements', 'Other Working', 'Sampling', 'Sponsorships', 'Capability Building/Other', 'Trade Equipment', 'Trade Programs', 'Unilateral'.
+- Some of the "Tier 3" values can be 'Digital Ad Production', 'Other Ad Production', 'TV Print Radio OOH Prod', 'Creative Agency Fees','In Store and POS Design/Development', 'Media Agency Fees', 'Other Agency Fees', 'Social Media/Influence Marketing' etc. I have not listed all the values owing to large number of values.
+- Within a "Tier 1" item, there can be multiple "Tier 2" items. Within a "Tier 2" item there can be multiple "Tier 3" items. Its like a tree structure. Following is an example, within 'Pull-Non-Working' there can be 'Ad Production', 'Agency Fees', 'Innovation and Insight', 'Insight', 'Other Non Working' and 'Package Design'. Within 'Ad Production', there can be 'Digital Ad Production', 'Other Ad Production', 'TV Print Radio OOH Prod'. Within 'Agency Fees' there can be 'Creative Agency Fees', 'In Store and POS Design/Development', 'Media Agency Fees', 'Other Agency Fees', 'Social Media/Influence Marketing'.
+
+[INSTRUCTIONS]
+- If the question is clearly about budget, expenses, spend, costs, or allocation → Perform Tier mapping using the hierarchy.  In this case, "mapping_needed" will be true.
+- If the question is unrelated to budgets (e.g., greetings, generic queries, strategy. etc.) → Do not perform any Tier mapping. In this case, "mapping_needed" will be false.
+- If you are unsure, default to "mapping_needed": false.  
+
+[TIER MAPPING INSTRUCTIONS]
+If mapping is needed, follow these rules strictly:
+1. Only use the exact values provided in the hierarchy. Do not change spelling, add spaces, or invent new categories.  
+2. If a synonym or paraphrase appears in the question, map it to the closest known value from the hierarchy.  
+3. Classify to the deepest tier explicitly required by the user question:
+    - If the question refers to Tier 1 → only return Tier 1.
+    - If it refers to Tier 2 → return Tier 1 and Tier 2.
+    - If it refers to Tier 3 → return Tier 1, Tier 2, and Tier 3.
+4. If multiple items are mentioned, return all of them in a list.
+5. If no clear match exists, omit that tier entirely instead of writing "Unknown".
+6. The output must be in strict JSON with values copied exactly from the hierarchy list.
+
+[TIER HIERARCHY]
+{tier_hierarchy}
+
+[EXAMPLES]
+Example 1:
+User Question: "What was the spend on Instagram ads and POS materials?"
+Expected Answer:
+{{{{
+  "mapping_needed": true,
+  "results": [
+    {{{{
+      "tier_1": "Pull-Non-Working",
+      "tier_2": "Agency Fees",
+      "tier_3": "Social Media/Influence Marketing"
+    }}}},
+    {{{{
+      "tier_1": "Pull-Working",
+      "tier_2": "In Store & POS Execution"
+    }}}}
+  ]
+}}}}
+Example 2:
+User Question: "How are you today?"
+Expected Answer:
+{{{{
+  "mapping_needed": false,
+  "results": []
+}}}}
+Example 3:
+User Question: "Breakdown of ad production across TV and digital in 2025"
+Expected Answer:
+{{{{
+  "mapping_needed": true,
+  "results": [
+    {{{{
+      "tier_1": "Pull-Non-Working",
+      "tier_2": "Ad Production",
+      "tier_3": "TV Print Radio OOH Prod"
+    }}}},
+    {{{{
+      "tier_1": "Pull-Non-Working",
+      "tier_2": "Ad Production",
+      "tier_3": "Digital Ad Production"
+    }}}}
+  ]
+}}}}
+Example 4
+User Question: "Show me Pull-Working split for last year"
+Expected Answer:
+{{{{
+  "mapping_needed": true,
+  "results": [
+    {{{{
+      "tier_1": "Pull-Working"
+    }}}}
+  ]
+}}}}
+
+[USER QUESTION]
+{user_question}
+
+[OUTPUT FORMAT] - Answer Format (strict JSON as in examples above)
+[
+  "mapping_needed": true/false,
+  "results": [
+    {{{{
+      "tier_1": "<Tier 1 value>",
+      "tier_2": "<Tier 2 value>",
+      "tier_3": "<Tier 3 value>"
+    }}}},
+    ...
+]
+"""
