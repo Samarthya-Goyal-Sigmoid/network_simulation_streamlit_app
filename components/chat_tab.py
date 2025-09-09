@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 import random
+import copy
 import os
 import pandas as pd
 from langchain.schema import HumanMessage
@@ -152,9 +153,19 @@ def render_chat_tab():
                                             chat_avatars["Assistant"],
                                         ),
                                     ):
+                                        # Expander settings
+                                        supervisor_expanded = copy.deepcopy(
+                                            default_supervisor_expanded
+                                        )
+                                        if message["result"]["type"] in [
+                                            "direct_response",
+                                            "no_direct_response",
+                                            "tier_mapping_error",
+                                        ]:
+                                            supervisor_expanded = True
                                         with st.expander(
                                             "Supervisor Agent Response",
-                                            expanded=default_supervisor_expanded,
+                                            expanded=supervisor_expanded,
                                         ):
                                             supervisor_content = ""
                                             if message["result"]["type"] == "agent":
