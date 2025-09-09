@@ -4,6 +4,64 @@ import base64
 import matplotlib.colors as mcolors
 
 
+# UI display functions
+def display_content_type_1(content, bg_color, margin_bottom="0em"):
+    st.markdown(
+        f"""
+        <div style="
+            background-color: {bg_color};
+            color: {'black'};
+            border-radius: 0.5em;
+            padding: 1em;
+            font-size: 16px;
+            margin-bottom: {margin_bottom}
+        ">
+            {content}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def display_content_type_2(content, bg_color, filtered_graph_content):
+    figure_content = ""
+    graph_template = """
+    <div style="
+            display: flex;
+            justify-content: center;
+            border-radius: 0 0 0.5em 0.5em;
+            background-color: {{{{'white'}}}}
+        ">
+        <img src="data:image/png;base64,{plot_info}" style="width:auto; height:auto;">
+    </div>
+    """
+    for graph_path in filtered_graph_content:
+        if figure_content == "":
+            figure_content = graph_template.format(
+                plot_info=get_base64_image(graph_path)
+            ).strip()
+        else:
+            figure_content = (
+                f"{figure_content}<br>"
+                + graph_template.format(plot_info=get_base64_image(graph_path)).strip()
+            )
+    final_content = f"""
+        <div style="
+            background-color: {bg_color};
+            color: {'black'};
+            border-radius: 0.5em 0.5em 0em 0em;
+            padding: 1em;
+            font-size: 16px;
+        ">
+            <div style="padding: 1em; border-radius: 0.5em 0.5em 0 0;">
+                {content}
+            </div>
+            {figure_content}
+        </div>
+    """
+    st.markdown(final_content, unsafe_allow_html=True)
+
+
 # Convert messages to plain text
 def messages_to_text(messages):
     lines = []
