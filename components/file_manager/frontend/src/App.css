@@ -1,0 +1,87 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 5vmin);
+  color: transparent;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Make #root use inline style and minimal width */
+#root {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+
+/* Shrink upload container */
+.upload-container {
+  background-color: transparent;
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+
+/* Icon button itself */
+.upload-button {
+  background-color: transparent;
+  border: 1px solid black;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+/* Optional: remove internal spacing from any SVG/image inside button */
+.upload-button * {
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

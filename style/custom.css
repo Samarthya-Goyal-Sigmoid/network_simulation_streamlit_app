@@ -36,8 +36,9 @@ section[data-testid="stSidebar"][aria-expanded="false"] ~ div {
 /* Inject custom CSS for tabs */
 /* Container for the tab labels */
 [data-testid="stTabs"] > div {
-    background-color: #f5f7fa;
+    background-color: #fffefe;
     border-radius: 12px;
+    margin: -15px;
     padding: 4px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
@@ -47,7 +48,7 @@ button[role="tab"] {
     border-radius: 8px;
     padding: 6px 12px;
     margin: 4px;
-    font-weight: 500;
+    font-weight: 1000;
     color: #333;
     background-color: #e2e8f0;
     border: none;
@@ -70,12 +71,12 @@ button[role="tab"]:hover {
 div.stButton > button {
     background-color: white; 
     color: #E30A13;
-    border: 1px solid #E30A13;    
+    border: 1px solid black;    
     transition: background-color 0.3s ease;
 }
 
 div.stButton > button:hover {
-    background-color: #E30A13; 
+    background-color: "transparent"; 
     color: white;
 }
 

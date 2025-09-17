@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import base64
 import matplotlib.colors as mcolors
+import pandas as pd
+
 
 
 # UI display functions
@@ -106,11 +108,11 @@ def lighten_color(color, amount=0.3):
 container_css_styles = """
     {
         background-color: #FFFFFF;
-        padding-top: 1em;
+        padding-top: 0em;
         padding-right: 1em;
         padding-bottom: 1em;
         padding-left: 1em;
-        border-radius: 0.5em;
+        border-radius: 1em;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 """
@@ -192,3 +194,59 @@ def display_saved_plot(plot_path: str, bg_color="#f0f2f6"):
             """,
             unsafe_allow_html=True,
         )
+
+def get_default_network_tables():
+    return {
+        "Factory Level": pd.DataFrame({
+            "Factory": ["F1", "F2"],
+            "Holding Cost Per Unit Per Day": [1.5, 1.8],
+        }),
+        "Factory Product Level": pd.DataFrame({
+            "Factory": ["F1", "F1", "F1", "F2", "F2"],
+            "Product": ["P1", "P2", "P3", "P4", "P5"],
+            "Production Capacity": [410, 400, 440, 420, 420],
+            "Starting Inventory": [460, 440, 490, 470, 470],
+            "Production Cost Per Unit": [4, 6, 7, 8, 6],
+        }),
+        "Warehouse Level": pd.DataFrame({
+            "Warehouse": ["W1", "W2", "W3", "W4"],
+            "Holding Cost Per Unit Per Day": [2.1, 2.3, 2.2, 2.15],
+        }),
+        "Warehouse Factory Level": pd.DataFrame({
+            "Warehouse": ["W1", "W1", "W2", "W2", "W3"],
+            "Factory": ["F1", "F2", "F1", "F2", "F1"],
+            "Transporatation Cost Per Unit Per Km": [0.0020, 0.0305, 0.0250, 0.0400, 0.0320],
+            "Distance Between Warehouse & Factory": [180, 280, 230, 360, 290],
+            "Lead Time Distribution": ["Categorical"] * 5,
+            "Lead Time Parameters": [
+                "{1: 0.02, 2: 0.8, 3: 0.18}",
+                "{1: 0.04, 2: 0.76, 3: 0.2}",
+                "{1: 0.07, 2: 0.76, 3: 0.17}",
+                "{1: 0.02, 2: 0.74, 3: 0.24}",
+                "{1: 0.02, 2: 0.68, 3: 0.3}",
+            ]
+        }),
+        "Warehouse Product Level": pd.DataFrame({
+            "Warehouse": ["W1"] * 5,
+            "Product": ["P1", "P2", "P3", "P4", "P5"],
+            "Daily Demand Distribution": ["Normal"] * 5,
+            "Demand Distribution Parameters": [
+                "{'mean': 97, 'std_dev': 20}",
+                "{'mean': 83, 'std_dev': 13}",
+                "{'mean': 116, 'std_dev': 19}",
+                "{'mean': 118, 'std_dev': 10}",
+                "{'mean': 119, 'std_dev': 17}",
+            ],
+            "Inventory Policy": ["Min/Max"] * 5,
+            "Inventory Policy Parameters": [
+                "{'min':120, 'max':140}",
+                "{'min':100, 'max':120}",
+                "{'min':140, 'max':160}",
+                "{'min':150, 'max':160}",
+                "{'min':150, 'max':160}",
+            ],
+            "Safety Stock": [130, 110, 160, 160, 160],
+            "Starting Inventory": [380, 320, 440, 460, 460],
+            "Opportunity Cost Per Unit": [1.2, 1.3, 1.3, 1.8, 1.3],
+        })
+    }

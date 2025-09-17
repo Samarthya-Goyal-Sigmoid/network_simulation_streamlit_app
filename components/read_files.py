@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def parse_uploaded_file(uploaded_file, required_cols):
     try:
         # Detect file type by extension
