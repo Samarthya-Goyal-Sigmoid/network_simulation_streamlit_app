@@ -101,15 +101,18 @@ def render_network_design():
                         df.to_excel(writer, sheet_name=sheet[:31], index=False)
 
                 st.download_button(
-                    label="📥",
+                    label="",
                     data=output.getvalue(),
                     file_name="network_new_data.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    help="Download all edited data"
+                    help="Download all edited data",
+                    icon=":material/download:"
                 )
 
             with col3:
-                if st.button("🗑️", help="Clear all uploaded data"):
+                if st.button("", 
+                             help="Clear all uploaded data",
+                             icon=":material/delete:"):
                     init_session_state()
 
         # --- Tab-wise Table Editors ---
@@ -151,16 +154,19 @@ def render_network_design():
                         output = BytesIO()
                         st.session_state[buffer_key].to_excel(output, index=False)
                         st.download_button(
-                            label="📥",
+                            label="",
                             data=output.getvalue(),
                             file_name=f"{tab_name.replace(' ', '_')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            key=f"download_btn_{df_key}"
+                            key=f"download_btn_{df_key}",
+                            icon=":material/download:"
                         )
 
                     # Delete per tab
                     with c3:
-                        if st.button("🗑️", key=f"delete_{df_key}"):
+                        if st.button("", 
+                                     key=f"delete_{df_key}",
+                                     icon=":material/delete:"):
                             st.session_state.tables[tab_name] = pd.DataFrame()
                             st.session_state[buffer_key] = pd.DataFrame()
                             st.success(f"🗑️ {tab_name} data cleared.")
