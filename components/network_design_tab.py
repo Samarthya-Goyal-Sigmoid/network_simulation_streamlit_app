@@ -13,6 +13,14 @@ from .session_state_manager import init_session_state
 text_color = "#E30A13"
 
 def render_network_design():
+    st.markdown("""
+        <style>
+            section[data-testid="stTabs"] > div {
+                display: flex;
+                justify-content: center;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     # --- Set Page Layout and Header ---
     with stylable_container(key="network_design_page", css_styles=container_css_styles):
         c1, _, c2 = st.columns([0.7, 0.1, 0.2], vertical_alignment="center")
@@ -125,7 +133,16 @@ def render_network_design():
                     init_session_state()
 
         # --- Tab-wise Table Editors ---
-        tab_objects = st.tabs(tabs)
+        tab_alignment_css = """
+                        {
+                            display: flex;
+                            justify-content: center;
+                            margin-bottom: 1rem;
+                            margin-top: 1rem;
+                        }
+                        """
+        with stylable_container(key="centered_tabs", css_styles=tab_alignment_css):
+            tab_objects = st.tabs(tabs, )
         for tab_obj, tab_name in zip(tab_objects, tabs):
             with tab_obj:
                 buffer_key = f"editor_buffer_{tab_name.replace(' ', '_')}"
@@ -187,33 +204,39 @@ def render_network_design():
                             st.success(f"🗑️ {tab_name} data cleared.")
 
                 # --- Render Table ---
-                if tab_name not in st.session_state.tables or st.session_state.tables[tab_name].empty:
-                    st.info("📂 No data available for this tab.")
-                else:
-                    column_config = {}
-                    for col in df.columns:
-                        dtype = df[col].dtype
-                        if pd.api.types.is_integer_dtype(dtype):
-                            column_config[col] = st.column_config.NumberColumn(label=col, format="%d", step=1)
-                        elif pd.api.types.is_float_dtype(dtype):
-                            column_config[col] = st.column_config.NumberColumn(label=col, format="%.2f")
-                        elif pd.api.types.is_bool_dtype(dtype):
-                            column_config[col] = st.column_config.CheckboxColumn(label=col)
-                        else:
-                            column_config[col] = st.column_config.TextColumn(label=col)
+                container_css_table_styles = """
+                    {
+                        background-color: #FFFFFF;
+                    }
+                    """
+                with stylable_container(key=f"design_tables_{tab_name.replace(' ', '_')}", css_styles=container_css_table_styles):
+                    if tab_name not in st.session_state.tables or st.session_state.tables[tab_name].empty:
+                        st.info("📂 No data available for this tab.")
+                    else:
+                        column_config = {}
+                        for col in df.columns:
+                            dtype = df[col].dtype
+                            if pd.api.types.is_integer_dtype(dtype):
+                                column_config[col] = st.column_config.NumberColumn(label=col, format="%d", step=1)
+                            elif pd.api.types.is_float_dtype(dtype):
+                                column_config[col] = st.column_config.NumberColumn(label=col, format="%.2f")
+                            elif pd.api.types.is_bool_dtype(dtype):
+                                column_config[col] = st.column_config.CheckboxColumn(label=col)
+                            else:
+                                column_config[col] = st.column_config.TextColumn(label=col)
 
-                    # 1. Use buffer_key to access session-level copy
-                    df = st.session_state.get(buffer_key, pd.DataFrame()).copy()
+                        # 1. Use buffer_key to access session-level copy
+                        df = st.session_state.get(buffer_key, pd.DataFrame()).copy()
 
-                    edited_df = st.data_editor(
-                        df,
-                        key=df_key,
-                        column_config=column_config,
-                        hide_index=True,
-                        use_container_width=True,
-                        num_rows="dynamic",
-                    )
+                        edited_df = st.data_editor(
+                            df,
+                            key=df_key,
+                            column_config=column_config,
+                            hide_index=True,
+                            use_container_width=True,
+                            num_rows="dynamic",
+                        )
 
-                    if not edited_df.equals(df):
-                        st.session_state[buffer_key] = edited_df.copy()
-                        st.session_state["tables"][tab_name] = edited_df.copy()  # Optional
+                        if not edited_df.equals(df):
+                            st.session_state[buffer_key] = edited_df.copy()
+                            st.session_state["tables"][tab_name] = edited_df.copy()  # Optional

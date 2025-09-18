@@ -45,7 +45,8 @@ const styles = {
   container: {
     display: "flex",
     borderRadius: "8px",
-    background: "white",
+    background: "white",  
+    border: "1px solid #E0E0E0",
     justifyContent: "center",
     alignItems: "center",
     width: "fit-content",
@@ -53,11 +54,11 @@ const styles = {
   },
   iconButton: {
     background: "white",
-    border: "1px solid rgb(49, 51, 63)",
+    border: "1px solid black",
     borderRadius: "8px",
     fontSize: "20px",
     cursor: "pointer",
-    color: "black",
+    color: "#E0E0E0",
     transition: "color 0.2s",
   },
 };

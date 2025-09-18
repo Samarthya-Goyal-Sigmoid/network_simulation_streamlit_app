@@ -37,9 +37,9 @@ section[data-testid="stSidebar"][aria-expanded="false"] ~ div {
 /* Container for the tab labels */
 [data-testid="stTabs"] > div {
     background-color: #fffefe;
-    border-radius: 12px;
+    border-radius: 9px;
     margin: -15px;
-    padding: 4px;
+    padding: 2px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
@@ -61,7 +61,7 @@ button[aria-selected="true"] {
     background-color: #ffffff !important;
     color: #000000;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid black;
+    border: 1px solid #E0E0E0;;
 }
 
 /* Hover effect */
