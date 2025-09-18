@@ -107,9 +107,9 @@ def lighten_color(color, amount=0.3):
 container_css_styles = """
     {
         background-color: #FFFFFF;
-        padding-top: 0em;
+        padding-top: 2em;
         padding-right: 1em;
-        padding-bottom: 1em;
+        padding-bottom: 3em;
         padding-left: 1em;
         border-radius: 1em;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);

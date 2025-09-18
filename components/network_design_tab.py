@@ -21,9 +21,6 @@ def render_network_design():
                 f'<h2 style="color: {text_color}; margin: 0;">Supply Chain Network Simulator</h2>',
                 unsafe_allow_html=True,
             )
-        with c2:
-            st.image("logo/sigmoid_logo.png", width=150)
-
     container_css_tabs_styles = """
     {
         background-color: #FFFFFF;
