@@ -63,7 +63,6 @@ def display_content_type_2(content, bg_color, filtered_graph_content):
     """
     st.markdown(final_content, unsafe_allow_html=True)
 
-
 # Convert messages to plain text
 def messages_to_text(messages):
     lines = []

@@ -64,10 +64,10 @@ button[aria-selected="true"] {
 }
 
 /* Hover effect */
-button[role="tab"]:hover {
+/* button[role="tab"]:hover {
     background-color: #d9e2ec;
     border: 1px solid black;
-}
+} */
 
 /* Custom CSS for button */
 div.stButton > button {
@@ -77,10 +77,10 @@ div.stButton > button {
     transition: background-color 0.3s ease;
 }
 
-div.stButton > button:hover {
+/* div.stButton > button:hover {
     background-color: "transparent"; 
-    color: white;
-}
+    color: red;
+} */
 
 /* Inject CSS to color the full main area */
 /* Color the top toolbar area */
