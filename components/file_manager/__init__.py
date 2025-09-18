@@ -16,7 +16,7 @@ else:
     print("✅ [DEBUG] Build folder found. Declaring Streamlit component...")
 
 # Step 4: Declare component
-file_manager = components.declare_component(
+file_manager_component = components.declare_component(
     "file_manager", path=build_dir
 )
 

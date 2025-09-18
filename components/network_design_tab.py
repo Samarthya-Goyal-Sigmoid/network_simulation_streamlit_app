@@ -5,7 +5,7 @@ import copy
 from io import BytesIO
 from streamlit_extras.stylable_container import stylable_container
 from PIL import Image
-from components.file_manager import file_manager
+from components.file_manager import file_manager_component
 from .ui_helpers import container_css_styles, get_default_network_tables
 from .session_state_manager import init_session_state
 
@@ -53,7 +53,7 @@ def render_network_design():
             _, col1, col2, col3 = st.columns([0.8, 0.075, 0.075, 0.075])
 
             with col1:
-                action = file_manager()
+                action = file_manager_component()
                 st.session_state.action = action
 
             # --- Handle Upload ---
