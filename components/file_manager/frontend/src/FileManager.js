@@ -5,7 +5,7 @@ import UploadIcon from "./assets/UploadIcon.svg";
 const FileUploader = () => {
   useEffect(() => {
     Streamlit.setComponentReady();
-    Streamlit.setFrameHeight(65);
+    Streamlit.setFrameHeight(40);
   }, []);
 
   const sendToStreamlit = (type, payload = {}) => {

@@ -44,6 +44,7 @@ section[data-testid="stSidebar"][aria-expanded="false"] ~ div {
 }
 
 /* Individual tab buttons */
+/* Individual 5 for different level buttons */
 button[role="tab"] {
     border-radius: 8px;
     padding: 6px 12px;
@@ -70,17 +71,19 @@ button[aria-selected="true"] {
 } */
 
 /* Custom CSS for button */
+/* Individual 5 for different level buttons */
 div.stButton > button {
     background-color: white; 
     color: black;
-    border: 1px solid black;    
+    border: 1px solid #E0E0E0
+;    
     transition: background-color 0.3s ease;
 }
 
-/* div.stButton > button:hover {
+div.stButton > button:hover {
     background-color: "transparent"; 
     color: red;
-} */
+}
 
 /* Inject CSS to color the full main area */
 /* Color the top toolbar area */
