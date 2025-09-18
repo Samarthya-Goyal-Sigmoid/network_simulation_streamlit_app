@@ -128,7 +128,7 @@ def render_network_design():
                     
                     # Upload per tab
                     with c1:
-                        per_table_action = file_manager(key=f"file_manager_{df_key}")
+                        per_table_action = file_manager_component(key=f"file_manager_{df_key}")
                         if (
                             per_table_action
                             and isinstance(per_table_action, dict)
