@@ -54,8 +54,9 @@ const styles = {
   },
   iconButton: {
     background: "white",
-    border: "1px solid black",
+    border: "0.4px solid #E0E0E0",
     borderRadius: "8px",
+    padding: "0 8px",
     fontSize: "20px",
     cursor: "pointer",
     color: "#E0E0E0",

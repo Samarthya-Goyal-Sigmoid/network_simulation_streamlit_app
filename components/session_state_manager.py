@@ -6,18 +6,7 @@ import pickle
 import sys
 from datetime import datetime
 import pandas as pd
-
-from src.helpers import preprocess_expense_data, preprocess_budget_data
 from components.ui_helpers import get_default_network_tables
-
-tab_keys = {
-    "Factory Level": "factory_level_editor",
-    "Factory Product Level": "factory_product_level_editor",
-    "Warehouse Level": "warehouse_level_editor",
-    "Warehouse Factory Level": "warehouse_factory_level_editor",
-    "Warehouse Product Level": "warehouse_product_level_editor",
-}
-
 
 def init_session_state():
     # Session state
@@ -52,7 +41,6 @@ def init_session_state():
     #     st.session_state["open_ai_key"] = ""
 
 
-
     # --- Network Design Tab Session States ---
     if "tables" not in st.session_state:
         st.session_state["tables"] = get_default_network_tables().copy()
@@ -66,19 +54,18 @@ def init_session_state():
         st.session_state["action"] = None
     if "uploaded_sheets" not in st.session_state:
         st.session_state["uploaded_sheets"] = []
+    if "_main_upload_md5" not in st.session_state:
+        st.session_state["_main_upload_md5"] = None
 
-   # Clear old keys
-    for key in list(st.session_state.keys()):
-        if key.startswith("editor_buffer_") or key.endswith("_table"):
-            del st.session_state[key]
-
-    # Initialize default tables
+def reset_session_state():
     st.session_state["tables"] = get_default_network_tables().copy()
-    st.session_state["file_uploaded_once"] = False
     st.session_state["active_tab"] = "Factory Level"
-
-    # Manually map each editor key to its corresponding table copy
-    for tab_name in st.session_state["tables"]:
-        buffer_key = f"editor_buffer_{tab_name.replace(' ', '_')}"
-        if buffer_key not in st.session_state:
-            st.session_state[buffer_key] = st.session_state["tables"][tab_name].copy()
+    st.session_state["file_uploaded_once"] = False
+    st.session_state["show_download_button"] = False
+    st.session_state["action"] = None
+    st.session_state["uploaded_sheets"] = []
+    st.session_state["_main_upload_md5"] = None
+    # Also clear editor keys so UI doesn’t resurrect old rows
+    for key in list(st.session_state.keys()):
+        if key.startswith("editor_") or key.startswith("__md5_"):
+            del st.session_state[key]
